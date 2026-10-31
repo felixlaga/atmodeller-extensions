@@ -49,6 +49,20 @@ You can add an end-member to a database, or replace an existing one, with ``set_
 
 This is the default database, so you can start from ``DataBase.default()`` and add further end-members. Diamond (``diamond_gustafson`` in ``atmodeller.thermodata.gustafson``) has the Gibbs energy of graphite plus the Gibbs energy of diamond relative to graphite from the assessment of :cite:t:`Gustafson1986`, which is valid to 6000 K, and graphite and diamond take the volumes of the same assessment. An end-member that is replaced, such as graphite, is still stitched together with the other end-members of its formula by ``PurePhase.from_formula``, whereas an end-member that is added, such as diamond, can only be selected on its own.
 
+Silicate liquids
+^^^^^^^^^^^^^^^^
+
+In the default database, silicate liquids have their 1-bar Gibbs energies at all pressures, as do the other condensates. Beneath a thick envelope, at GPa pressures, the integral of their volume over pressure is not small: for SiO2 liquid at 5 GPa and 3000 K it is about 123 kJ/mol, which raises the equilibrium constant of SiO2(l) = SiO + 1/2 O2 by a factor of about 140. ``DataBase.default(liquid_volumes=True)`` gives the liquid end-members of SiO2, MgO, MgSiO3 and Mg2SiO4 the volumes of :cite:t:`HP11` (``LIQUID_VOLUMES`` in ``atmodeller.thermodata.holland_powell``, with the equation of state ``LiquidTaitEOS``), so that their Gibbs energies depend on pressure:
+
+.. code-block:: python
+
+    from atmodeller import DataBase, PurePhase
+
+    db = DataBase.default(liquid_volumes=True)
+    sio2_l = PurePhase.from_end_member("liquid", formula="SiO2", database=db)  # named "O2Si_l"
+
+The SiO2 and MgO liquids with a volume are selected on their own, since ``PurePhase.from_formula`` cannot stitch them together with the solids of their formulas: the pressure dependence would move the melting point, which the stitched data place at its 1-bar temperature. The packaged data have no MgSiO3 or Mg2SiO4 solids, so those two are unaffected. The volumes are off by default, so that results without them are unchanged. Only these four liquids have volumes. Other condensates, the iron-wüstite buffer and the solubility laws keep their own pressure dependence, and the dissolved species have no volumes, so check which terms of a reaction depend on pressure before comparing results with and without the liquid volumes.
+
 Data with only a heat capacity model can be created with ``IntegratedThermodynamicProperties`` in ``atmodeller.thermodata``, which integrates the heat capacity from the enthalpy and entropy at the reference temperature, and added to a database with ``set_end_member``.
 
 The temperature range of the data you add matters for condensates. By default, a pure condensate is not stable outside the temperature range of its data (``temperature_range()``): its Gibbs energy is held at its value at the bound, and a large penalty (``NO_DATA_GIBBS_OVER_RT`` in ``atmodeller.constants``) is added. This is because the range of a pure phase is often bounded by a phase boundary, such as a melting point. A species of a solution, such as the silicate melt, is instead extended with a constant heat capacity, and gas data are extrapolated in their own form. To change the extrapolation below or above the range, pass ``extrapolate_below`` or ``extrapolate_above`` (``"off"``, ``"data"`` or ``"constant_cp"``) to ``ChemicalSpecies.from_end_member`` or the ``PurePhase`` methods (see :ref:`species-extrapolation`).

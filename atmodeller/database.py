@@ -36,6 +36,7 @@ from atmodeller.thermodata.glenn import (
     read_glenn_coefficients,
 )
 from atmodeller.thermodata.gustafson import GRAPHITE_VOLUME_GUSTAFSON, diamond_gustafson
+from atmodeller.thermodata.holland_powell import LIQUID_VOLUMES
 
 _SHARED_END_MEMBERS: tuple[str, ...] = (GAS_END_MEMBER, LIQUID_END_MEMBER)
 """End-members that are shared by all formulas, unlike a mineral"""
@@ -77,7 +78,7 @@ class DataBase:
         )
 
     @classmethod
-    def default(cls) -> Self:
+    def default(cls, *, liquid_volumes: bool = False) -> Self:
         """Creates the default database
 
         This is the packaged NASA Glenn coefficients
@@ -93,8 +94,23 @@ class DataBase:
               :cite:t:`Gustafson1986`, valid to 6000 K, and it has its own volume.
 
         The volumes change the Gibbs energies of graphite and diamond, not their activities.
-        Gases and other condensates are unchanged. Each call gives a new database, to which
-        further end-members can be added with :meth:`set_end_member`.
+        Gases and other condensates are unchanged, unless ``liquid_volumes`` is ``True``. Then the
+        liquid end-members of SiO2, MgO, MgSiO3 and Mg2SiO4 include the volumes of
+        :cite:t:`HP11` (:data:`~atmodeller.thermodata.holland_powell.LIQUID_VOLUMES`), so that
+        their Gibbs energies depend on pressure too, which matters at the GPa pressures beneath a
+        thick envelope. The SiO2 and MgO liquids can then no longer be stitched together with
+        the solids of their formulas by :meth:`~atmodeller.phases.PurePhase.from_formula`, since
+        the pressure dependence would move the melting point, so they are selected on their own,
+        e.g. with ``PurePhase.from_end_member("liquid", formula="SiO2", database=db)``. The
+        packaged data have no MgSiO3 or Mg2SiO4 solids, so those liquids are unaffected.
+
+        Each call gives a new database, to which further end-members can be added with
+        :meth:`set_end_member`.
+
+        Args:
+            liquid_volumes: Whether the liquid end-members of SiO2, MgO, MgSiO3 and Mg2SiO4
+                include their volumes. Defaults to ``False``, which keeps their 1-bar Gibbs
+                energies at all pressures.
 
         Returns:
             The default database
@@ -105,6 +121,10 @@ class DataBase:
         # by PurePhase.from_formula("C"). Diamond is added, so it is only selected on its own.
         database.set_end_member("C", "graphite", graphite.with_volume(GRAPHITE_VOLUME_GUSTAFSON))
         database.set_end_member("C", "diamond", diamond_gustafson)
+        if liquid_volumes:
+            for formula, volume in LIQUID_VOLUMES.items():
+                liquid = database.get_end_member(formula, LIQUID_END_MEMBER)
+                database.set_end_member(formula, LIQUID_END_MEMBER, liquid.with_volume(volume))
 
         return database
 

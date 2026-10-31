@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Volume models of solids from :cite:t:`HP98` and :cite:t:`HP11`."""
+"""Volume models of solids and liquids from :cite:t:`HP98` and :cite:t:`HP11`."""
 
 from typing import cast
 
@@ -265,6 +265,121 @@ class TaitEOS(eqx.Module):
         )
 
 
+class LiquidTaitEOS(eqx.Module):
+    r"""Volume of a liquid with the modified Tait equation of state of :cite:t:`HP11`
+
+    The liquid end-members of :cite:t:`HP11` have no thermal pressure. Instead, as in
+    :cite:t:`HP98`, the volume at 1 bar follows a constant thermal expansion and the bulk modulus
+    decreases linearly with temperature :cite:p:`HP11{p. 348}`:
+
+    .. math::
+        V_{1,T} = V_0 \exp\left[\alpha_0 (T - T_r)\right], \qquad
+        K_T = K_0 + \frac{\partial K}{\partial T}(T - T_r)
+
+    where :math:`T_r` is :data:`~atmodeller.constants.TEMPERATURE_REFERENCE`. The pressure
+    dependence follows the modified Tait equation of state :cite:p:`HP11{Eqs. 3, 12-13}` with
+    :math:`K_T` in place of :math:`K_0` and :math:`K''` held at :math:`-K'/K_0`, its value at the
+    reference temperature. This is the liquid equation of state of the :cite:t:`HP11` data set as
+    read by Perple_X (equation of state 9) and the ``HP_TMTL`` equation of state of BurnMan.
+
+    Args:
+        V0: Volume at the reference temperature and 1 bar in :math:`\mathrm{J}\ \mathrm{bar}^{-1}`
+        alpha0: Thermal expansion in :math:`\mathrm{K}^{-1}`
+        K0: Bulk modulus at the reference temperature (bar)
+        dKdP: Pressure derivative of the bulk modulus
+        dKdT: Temperature derivative of the bulk modulus (bar/K)
+    """
+
+    V0: float = eqx.field(converter=float)
+    alpha0: float = eqx.field(converter=float)
+    K0: float = eqx.field(converter=float)
+    dKdP: float = eqx.field(converter=float)
+    dKdT: float = eqx.field(converter=float)
+
+    def volume_1bar(self, temperature: ArrayLike) -> Array:
+        r"""Gets the volume at 1 bar.
+
+        Args:
+            temperature: Temperature (K)
+
+        Returns:
+            Volume at 1 bar in :math:`\mathrm{J}\ \mathrm{bar}^{-1}`
+        """
+        return self.V0 * jnp.exp(self.alpha0 * (as_j64(temperature) - TEMPERATURE_REFERENCE))
+
+    def bulk_modulus(self, temperature: ArrayLike) -> Array:
+        """Gets the bulk modulus at 1 bar.
+
+        Args:
+            temperature: Temperature (K)
+
+        Returns:
+            Bulk modulus (bar)
+        """
+        return self.K0 + self.dKdT * (as_j64(temperature) - TEMPERATURE_REFERENCE)
+
+    def _tait_parameters(self, temperature: ArrayLike) -> tuple[Array, Array, Array]:
+        """Gets the parameters a, b and c of the modified Tait equation of state
+
+        Args:
+            temperature: Temperature (K)
+
+        Returns:
+            Parameters a, b and c at the temperature :cite:p:`HP11{Eq. 3}`
+        """
+        d2KdP2: float = -self.dKdP / self.K0
+        bulk_modulus: Array = self.bulk_modulus(temperature)
+        a: Array = (1 + self.dKdP) / (1 + self.dKdP + bulk_modulus * d2KdP2)
+        b: Array = self.dKdP / bulk_modulus - d2KdP2 / (1 + self.dKdP)
+        c: Array = (1 + self.dKdP + bulk_modulus * d2KdP2) / (
+            self.dKdP**2 + self.dKdP - bulk_modulus * d2KdP2
+        )
+        return a, b, c
+
+    def volume(self, temperature: ArrayLike, pressure: ArrayLike) -> Array:
+        r"""Gets the volume.
+
+        Pressure is measured from 1 bar, as in :meth:`TaitEOS.volume`.
+
+        Args:
+            temperature: Temperature (K)
+            pressure: Pressure (bar)
+
+        Returns:
+            Volume in :math:`\mathrm{J}\ \mathrm{bar}^{-1}` :cite:p:`HP11{Eq. 12}`
+        """
+        a, b, c = self._tait_parameters(temperature)
+        excess_pressure: ArrayLike = pressure - STANDARD_PRESSURE
+        return self.volume_1bar(temperature) * (
+            1 - a * (1 - jnp.power(1 + b * excess_pressure, -c))
+        )
+
+    def volume_integral(self, temperature: ArrayLike, pressure: ArrayLike) -> Array:
+        r"""Gets the integral of volume with respect to pressure from 1 bar.
+
+        With :math:`P_{ex} = P - 1` bar, the integral is
+
+        .. math::
+            \int_1^P V\, dP' = V_{1,T}\left[(1 - a)P_{ex} + \frac{a}{b(c - 1)}\left(
+                1 - \left(1 + bP_{ex}\right)^{1-c}\right)\right]
+
+        which is :cite:t:`HP11{Eq. 13}` multiplied out, as in :meth:`TaitEOS.volume_integral`.
+
+        Args:
+            temperature: Temperature (K)
+            pressure: Pressure (bar)
+
+        Returns:
+            Integral of volume with respect to pressure in :math:`\mathrm{J}\ \mathrm{mol}^{-1}`
+        """
+        a, b, c = self._tait_parameters(temperature)
+        excess_pressure: ArrayLike = pressure - STANDARD_PRESSURE
+        return self.volume_1bar(temperature) * (
+            (1 - a) * excess_pressure
+            + a * (1 - jnp.power(1 + b * excess_pressure, 1 - c)) / (b * (c - 1))
+        )
+
+
 def einstein_temperature(entropy: float, number_atoms: int) -> float:
     """Gets the Einstein temperature estimated from the entropy :cite:p:`HP11`.
 
@@ -290,3 +405,23 @@ GRAPHITE_VOLUME_TAIT: TaitEOS = TaitEOS(
     0.530, 1.67e-5, 3.12e5, 3.90, einstein_temperature(5.74, 1)
 )
 """Volume of graphite from :cite:t:`HP11{Table 2a}`, with the bulk modulus converted to bar"""
+
+# Liquid end-members of the HP11 data set ds62, as distributed with Perple_X (hp62ver.dat, read
+# 2026-10-31): V0 (J/bar), alpha0 (1/K), K0 (bar), K' and dK/dT (bar/K). ds633 and ds634 give the
+# same values. K'' = -K'/K0 in all four.
+SIO2_LIQUID_VOLUME_TAIT: LiquidTaitEOS = LiquidTaitEOS(2.73, 0.0, 2.2e5, 9.46, -35.0)
+"""Volume of SiO2 liquid (qL) from :cite:t:`HP11`"""
+MGO_LIQUID_VOLUME_TAIT: LiquidTaitEOS = LiquidTaitEOS(0.839, 2.26e-4, 3.62e5, 10.06, -41.0)
+"""Volume of MgO liquid (perL) from :cite:t:`HP11`"""
+MG2SIO4_LIQUID_VOLUME_TAIT: LiquidTaitEOS = LiquidTaitEOS(4.312, 9.2e-5, 3.62e5, 10.06, -44.0)
+"""Volume of Mg2SiO4 liquid (foL) from :cite:t:`HP11`"""
+MGSIO3_LIQUID_VOLUME_TAIT: LiquidTaitEOS = LiquidTaitEOS(6.984 / 2, 6.81e-5, 2.18e5, 7.2, -24.0)
+"""Volume of MgSiO3 liquid from :cite:t:`HP11`, half of the Mg2Si2O6 end-member (enL)"""
+
+LIQUID_VOLUMES: dict[str, LiquidTaitEOS] = {
+    "O2Si": SIO2_LIQUID_VOLUME_TAIT,
+    "MgO": MGO_LIQUID_VOLUME_TAIT,
+    "Mg2O4Si": MG2SIO4_LIQUID_VOLUME_TAIT,
+    "MgO3Si": MGSIO3_LIQUID_VOLUME_TAIT,
+}
+"""Volumes of the liquid end-members that :cite:t:`HP11` give, keyed by Hill formula"""

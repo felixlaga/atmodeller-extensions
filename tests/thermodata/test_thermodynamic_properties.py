@@ -291,6 +291,50 @@ def test_vassiliev_heat_capacity() -> None:
         np.testing.assert_allclose(model.cp(1000.0), expected, rtol=1e-5)
 
 
+def test_holland_powell_liquid_volume() -> None:
+    """The Holland and Powell (2011) liquid volumes: the parameters of the data set ds62, the
+    reference volume at 298.15 K and 1 bar, a zero volume integral at 1 bar, the integral against
+    a quadrature of the volume, and the volume and integral of SiO2 and MgO liquid against BurnMan
+    2.1.0 (``HP_TMTL``)"""
+    # V0 (J/bar), alpha0 (1/K), K0 (bar), K' and dK/dT (bar/K) of qL, perL, foL and enL in
+    # Perple_X hp62ver.dat; MgSiO3 is half of enL (Mg2Si2O6), and the equation is linear in V0
+    ds62: dict[str, tuple[float, float, float, float, float]] = {
+        "O2Si": (2.73, 0.0, 220000.0, 9.46, -35.0),
+        "MgO": (0.839, 0.226e-3, 362000.0, 10.06, -41.0),
+        "Mg2O4Si": (4.312, 0.92e-4, 362000.0, 10.06, -44.0),
+        "MgO3Si": (6.984 / 2, 0.681e-4, 218000.0, 7.2, -24.0),
+    }
+    assert set(holland_powell.LIQUID_VOLUMES) == set(ds62)
+    for formula, (V0, alpha0, K0, dKdP, dKdT) in ds62.items():
+        model = holland_powell.LIQUID_VOLUMES[formula]
+        assert (model.V0, model.alpha0, model.K0, model.dKdP, model.dKdT) == (
+            V0,
+            alpha0,
+            K0,
+            dKdP,
+            dKdT,
+        )
+
+    for model in holland_powell.LIQUID_VOLUMES.values():
+        np.testing.assert_allclose(model.volume_1bar(TEMPERATURE_REFERENCE), model.V0)
+        np.testing.assert_allclose(model.volume(TEMPERATURE_REFERENCE, 1.0), model.V0)
+        np.testing.assert_allclose(model.volume_integral(2500.0, 1.0), 0.0, atol=1e-9)
+        pressure: np.ndarray = np.linspace(1.0, 1.0e5, 20001)
+        quadrature = float(np.trapezoid(np.asarray(model.volume(2500.0, pressure)), pressure))
+        np.testing.assert_allclose(model.volume_integral(2500.0, 1.0e5), quadrature, rtol=1e-7)
+
+    # Volume integral (J/mol) and volume (J/bar) at (T, P), computed with BurnMan 2.1.0
+    burnman: list[tuple[holland_powell.LiquidTaitEOS, float, float, float, float]] = [
+        (holland_powell.SIO2_LIQUID_VOLUME_TAIT, 3000.0, 5.0e4, 123093.70959553207, 2.3075212953),
+        (holland_powell.SIO2_LIQUID_VOLUME_TAIT, 2000.0, 1.0e5, 238692.9206622614, 2.2110022503),
+        (holland_powell.MGO_LIQUID_VOLUME_TAIT, 3000.0, 5.0e4, 72434.83713995459, 1.3834779127),
+        (holland_powell.MGO_LIQUID_VOLUME_TAIT, 2000.0, 1.0e5, 112389.6290485064, 1.0592973043),
+    ]
+    for model, temperature, pressure_bar, integral, volume in burnman:
+        np.testing.assert_allclose(model.volume_integral(temperature, pressure_bar), integral)
+        np.testing.assert_allclose(model.volume(temperature, pressure_bar), volume, rtol=1e-9)
+
+
 def test_holland_powell_volume() -> None:
     """The Holland and Powell Murnaghan and Tait volume models of graphite and diamond: the
     reference volume at 298.15 K and 1 bar, a zero volume integral at 1 bar, agreement between the

@@ -17,11 +17,13 @@ from jaxtyping import ArrayLike
 from atmodeller import debug_logger
 from atmodeller.classes import EquilibriumModel
 from atmodeller.containers import ChemicalSpecies
+from atmodeller.database import DataBase
 from atmodeller.output import Output
 from atmodeller.parameters import Parameters
 from atmodeller.phases import PurePhase
-from atmodeller.sci_utils import earth
+from atmodeller.sci_utils import GAS_CONSTANT, earth
 from atmodeller.state import BaseThermodynamicState, Planet, ThermodynamicState
+from atmodeller.thermodata.holland_powell import SIO2_LIQUID_VOLUME_TAIT
 
 logger: logging.Logger = debug_logger()
 logger.setLevel(logging.DEBUG)
@@ -39,6 +41,7 @@ CH4_g: ChemicalSpecies = ChemicalSpecies.create_gas("CH4")
 N2_g: ChemicalSpecies = ChemicalSpecies.create_gas("N2")
 CHN_g: ChemicalSpecies = ChemicalSpecies.create_gas("CHN")
 H_g: ChemicalSpecies = ChemicalSpecies.create_gas("H")
+OSi_g: ChemicalSpecies = ChemicalSpecies.create_gas("OSi")
 
 # Condensates
 graphite: PurePhase = PurePhase.from_end_member("graphite")
@@ -190,6 +193,43 @@ def test_impose_stable() -> None:
     }
 
     assert output.compare(factsage_result, log=True, rtol=TOLERANCE, atol=TOLERANCE)
+
+
+def test_silica_liquid_volume() -> None:
+    """Tests that the volume of SiO2 liquid shifts the vapour in equilibrium with it
+
+    With SiO2 liquid present, SiO2(l) = SiO + 1/2 O2 sets p(SiO) p(O2)^(1/2) for ideal gases. The
+    volume of the liquid (:meth:`DataBase.default` with ``liquid_volumes``) raises this product by
+    exp(integral of V dP / RT): not at all at 1 bar, and by about 140 times at 5 GPa and 3000 K.
+    """
+    gas_species: tuple[ChemicalSpecies, ...] = (H2_g, H2O_g, O2_g, OSi_g)
+    temperature: float = 3000.0
+    pressure: np.ndarray = np.array([1.0, 5.0e4])
+    log_product: dict[bool, np.ndarray] = {}
+    for liquid_volumes in (False, True):
+        silica: PurePhase = PurePhase.from_end_member(
+            "liquid", formula="SiO2", database=DataBase.default(liquid_volumes=liquid_volumes)
+        )
+        state: ThermodynamicState = ThermodynamicState.from_species(
+            gas_species, pressure=pressure, temperature=temperature, condensates=(silica,)
+        )
+        parameters: Parameters = Parameters(
+            state, mass_constraints={"H": 1.0, "Si": 1.0, "O": 2.0}, mass_units="moles"
+        )
+        out: dict[str, Any] = (
+            EquilibriumModel(parameters).solve_with_default().to_dict(to_numpy=True)
+        )
+        assert np.allclose(out["O2Si_l"]["species"]["activity"]["O2Si_l"], 1.0)
+        partial_pressure: dict[str, np.ndarray] = out["gas"]["species"]["partial_pressure"]
+        log_product[liquid_volumes] = np.ravel(
+            np.log(partial_pressure["OSi_g"]) + 0.5 * np.log(partial_pressure["O2_g"])
+        )
+
+    expected: np.ndarray = np.asarray(
+        SIO2_LIQUID_VOLUME_TAIT.volume_integral(temperature, pressure)
+    ) / (GAS_CONSTANT * temperature)
+    np.testing.assert_allclose(log_product[True] - log_product[False], expected, atol=1e-6)
+    assert np.exp(expected[1]) > 100
 
 
 def test_graphite_diamond() -> None:

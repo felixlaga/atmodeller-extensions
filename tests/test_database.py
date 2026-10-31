@@ -10,14 +10,17 @@ from pathlib import Path
 from typing import cast
 
 import equinox as eqx
+import numpy as np
 import pytest
 
 from atmodeller.containers import ChemicalSpecies
 from atmodeller.database import DataBase
 from atmodeller.interfaces import species_name
 from atmodeller.phases import PurePhase
+from atmodeller.sci_utils import GAS_CONSTANT
 from atmodeller.thermodata.core import DATA_DIRECTORY
 from atmodeller.thermodata.gustafson import GRAPHITE_VOLUME_GUSTAFSON, diamond_gustafson
+from atmodeller.thermodata.holland_powell import LIQUID_VOLUMES
 from atmodeller.thermodata.glenn import THERMODYNAMIC_DATA_SOURCE, glenn_properties
 
 
@@ -33,6 +36,43 @@ def test_default_database() -> None:
             ChemicalSpecies.from_end_member(end_member, database=db),
             ChemicalSpecies.from_end_member(end_member),
         )
+
+
+def test_default_liquid_volumes() -> None:
+    """The liquid volumes are off by default. With them, the four liquids depend on pressure by
+    their volume integral, other end-members are unchanged, and a liquid with a volume is selected
+    on its own rather than stitched to the solids"""
+    db: DataBase = DataBase.default()
+    db_volumes: DataBase = DataBase.default(liquid_volumes=True)
+    temperature: float = 3500.0
+    pressure: float = 5.0e4
+    for formula, volume in LIQUID_VOLUMES.items():
+        liquid = db.get_end_member(formula, "liquid")
+        liquid_volume = db_volumes.get_end_member(formula, "liquid")
+        assert liquid.volume_model is None
+        assert eqx.tree_equal(liquid_volume.volume_model, volume)
+        assert np.isclose(
+            liquid_volume.standard_gibbs_over_RT(temperature, 1.0),
+            liquid.standard_gibbs_over_RT(temperature, 1.0),
+            rtol=0,
+            atol=1e-12,
+        )
+        assert np.isclose(
+            liquid_volume.standard_gibbs_over_RT(temperature, pressure)
+            - liquid.standard_gibbs_over_RT(temperature, pressure),
+            volume.volume_integral(temperature, pressure) / (GAS_CONSTANT * temperature),
+            rtol=1e-12,
+        )
+
+    for formula, end_member in (("H2O", "liquid"), ("O2Si", "quartz-alpha"), ("C", "graphite")):
+        assert eqx.tree_equal(
+            db_volumes.get_end_member(formula, end_member), db.get_end_member(formula, end_member)
+        )
+    with pytest.raises(ValueError, match="cannot be stitched together"):
+        PurePhase.from_formula("SiO2", database=db_volumes)
+    assert (
+        PurePhase.from_end_member("liquid", formula="SiO2", database=db_volumes).name == "O2Si_l"
+    )
 
 
 def test_from_file(tmp_path: Path) -> None:
