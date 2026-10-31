@@ -1,0 +1,47 @@
+[
+  {
+    "mode": "ideal gas, no volume",
+    "converged": 22,
+    "P_GPa_min": 0.9867088161042282,
+    "P_GPa_max": 11.909011508797152,
+    "gas_Si_min": 0.003599384979444223,
+    "gas_Si_max": 0.06574631962835983,
+    "silica_activity_min": 1.0
+  },
+  {
+    "mode": "ideal gas, with volume",
+    "converged": 22,
+    "P_GPa_min": 162.90844962658522,
+    "P_GPa_max": 211.452123092228,
+    "gas_Si_min": 0.9999999999999994,
+    "gas_Si_max": 1.0000000000000062,
+    "silica_activity_min": 2.7864678597386637e-53
+  },
+  {
+    "mode": "real gas, no volume",
+    "converged": 22,
+    "P_GPa_min": 1.0593702019001718,
+    "P_GPa_max": 7.692245182902081,
+    "gas_Si_min": 0.004472041726697795,
+    "gas_Si_max": 0.06141212963012751,
+    "silica_activity_min": 1.0
+  },
+  {
+    "mode": "real gas, with volume",
+    "converged": 22,
+    "P_GPa_min": 160.77547491676293,
+    "P_GPa_max": 210.85992595682438,
+    "gas_Si_min": 0.9999999999999994,
+    "gas_Si_max": 1.0000000000000062,
+    "silica_activity_min": 5.520189504534809e-38
+  },
+  {
+    "mode": "real gas, with volume, published P fixed",
+    "converged": 22,
+    "P_GPa_min": 1.0593702019001725,
+    "P_GPa_max": 7.692245182902081,
+    "gas_Si_min": 0.009257285564675108,
+    "gas_Si_max": 0.5888385546583746,
+    "silica_activity_min": 1.0
+  }
+]

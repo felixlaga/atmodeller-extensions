@@ -1,0 +1,5 @@
+IW at 1 bar: CH4 = H2 at 0.227% H
+IW at MEB pressure: CH4 = H2 at 0.245% H
+max |delta log10 CH4/H2|: 0.434
+max relative P change: 0.138
+converged per buffer: {'IW at 1 bar': 25, 'IW at MEB pressure': 25}; compared where both converged
