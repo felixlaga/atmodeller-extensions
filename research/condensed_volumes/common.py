@@ -92,6 +92,24 @@ class ScaledVolume(eqx.Module):
         return self.factor * self.inner.volume_integral(temperature, pressure)
 
 
+class ExcessVolumeGas(eqx.Module):
+    """A real gas with a constant extra partial molar volume in the fluid
+
+    Adds dV (P - 1 bar) / RT to the log fugacity of the inner equation of state, which raises the
+    chemical potential of the species as a larger partial molar volume would. For sensitivity
+    tests of the gas side only.
+    """
+
+    inner: eqx.Module
+    excess_volume_cm3: float = eqx.field(converter=float)
+
+    def log_activity(self, temperature, pressure, mole_fractions=None):
+        excess = self.excess_volume_cm3 * 1e-6 * (pressure - 1.0) * 1e5
+        return self.inner.log_activity(temperature, pressure, mole_fractions) + excess / (
+            8.314462618 * temperature
+        )
+
+
 def budgets(hydrogen_wt_percent, metallicity) -> dict[str, np.ndarray]:
     """Element masses (kg) of the authors' grid, from their H mass and metallicity"""
     h = np.asarray(hydrogen_wt_percent, dtype=float) / 100 * PLANET_MASS
@@ -124,15 +142,19 @@ def meb_model(
     temperature: float | np.ndarray = MEB_TEMPERATURE,
     pressure: float | np.ndarray = np.nan,
     max_starts: int = 10,
+    gas_activity: dict | None = None,
 ) -> EquilibriumModel:
     """The MEB model. A finite pressure fixes it; NaN solves it from the weight of the gas.
 
     ``max_starts`` caps the restarts of rows that fail (Atmodeller's default is 10).
+    ``gas_activity`` replaces the activity model of the gases it names, e.g. ``{"OSi": ...}``.
     """
     eos = get_eos_models()
     solubility = get_solubility_models()
+    activity = {s: eos[EOS[s]] for s in GASES} if real_gas else {}
+    activity.update(gas_activity or {})
     gases = tuple(
-        ChemicalSpecies.create_gas(s, **({"activity": eos[EOS[s]]} if real_gas else {}))
+        ChemicalSpecies.create_gas(s, **({"activity": activity[s]} if s in activity else {}))
         for s in GASES
     )
     dissolved = tuple(

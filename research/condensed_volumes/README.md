@@ -1,6 +1,6 @@
 # Condensed-phase volumes at sub-Neptune magma-envelope boundaries
 
-**Answer: the volume of liquid SiO2 is not a small correction.** At the GPa pressures of a sub-Neptune magma-envelope boundary (MEB), it raises the equilibrium constants of SiO2 vaporisation and reduction by 55 times at 4 GPa and about 2,000 times at 8 GPa (3000 K). In the TOI-421 b model of Hakim et al. (2026), adding it leaves no boundary below 20 GPa for 0.3 wt% H or more. At the published pressures, it erases the metallicity signal in SiH4/CH4 for most 100x solar cases.
+**Answer: the published magma-envelope boundary (MEB) chemistry rests on two errors that cancel.** Melt keeps its 1-bar Gibbs energy, which hides a correction of 55 times at 4 GPa and about 2,000 times at 8 GPa (3000 K) against silicate vapour. The SiO equation of state is attractive at GPa pressures, which pushes the other way by a similar amount. Correcting only the melt removes the boundary of the TOI-421 b model of Hakim et al. (2026) for 0.3 wt% H or more, and makes its gas 10 to 20,000 times too silicate-rich against the simulations of Gilmore & Stixrude (2026). Correcting both brings the boundaries back, moves the 1 wt% H case beyond the H2-silicate critical point, and agrees with the simulations about as well as the published model.
 
 Published sub-Neptune equilibrium models keep melt and metal at their 1-bar Gibbs energies. Some of them correct the gases for pressure. Schlichting & Young (2022) and Werlen et al. (2026) tested the condensed term and called it small, mostly on reactions within the melt, where it nearly cancels. This study measures it for the reactions that exchange matter with the gas.
 
@@ -63,10 +63,53 @@ Holding the published pressure of each case fixed (1.06-7.69 GPa) and adding the
 
 The K2-18 b runs have no condensed species in their reactions, so the volumes enter only through the IW buffer (`bower_iw.py`). Evaluating it at the MEB pressure instead of 1 bar moves the CH4 = H2 crossing from 0.227% to 0.245% H, changes CH4/H2 by up to 2.7 times (at 2.3% H) and lowers the MEB pressure by up to 14%.
 
+### 5. The gas side: SiO is attractive in the published setup
+
+The SiO equation of state of the setup is the Redlich-Kwong fit of Connolly (2016), calibrated to 5 GPa (`gas_volume_scan.py`). At 3000 K it makes SiO an attractive fluid, unlike every other gas:
+
+| ln phi at 3000 K | 1 GPa | 2 GPa | 5 GPa | 10 GPa |
+|---|---:|---:|---:|---:|
+| SiO (Connolly 2016) | -0.78 | -1.16 | -1.44 | -1.37 |
+| CO (Shi & Saxena 1992) | 0.73 | 1.32 | 3.24 | 6.42 |
+| SiH4 (Wang 2018) | 0.67 | 1.35 | 3.36 | 6.68 |
+| H2O (CORK) | 0.45 | 0.93 | 2.34 | 4.50 |
+| H2 (Chabrier & Debras 2021) | 0.59 | 0.99 | 2.05 | 3.49 |
+
+- SiO has a molar volume of 5.5 cm3/mol at 5 GPa, a third of H2O (16) and a quarter of SiO2 liquid (23). So SiO2(l) + H2 = SiO + H2O loses 12 to 17 cm3/mol between 1 and 10 GPa, and pressure pushes silicate into the gas.
+- Against a CO-like SiO, the attractive SiO favours the vapour by about 100 times at 5 GPa and 2,400 times at 10 GPa: as large as the melt correction, with the opposite sign.
+- Giving SiO and SiH4 a constant extra partial molar volume restores the 0.1 wt% H boundaries from 4 cm3/mol and the 0.3 wt% H ones at 16 cm3/mol. The 1 wt% H boundaries do not return up to 16 cm3/mol.
+- Giving SiO the CO equation of state instead (`sio_proxy_map.py`), as a lower bound on its repulsion, restores all boundaries once the melt volume is included. Stable boundaries in GPa:
+
+| Variant | 0.1 wt% H | 0.3 wt% H | 1 wt% H |
+|---|---:|---:|---:|
+| published (attractive SiO, 1-bar melt) | 1.26 | 2.96 | 7.67 |
+| attractive SiO, melt volume | 14.7 | none | none |
+| SiO as CO, 1-bar melt | 0.88 | 2.45 | 7.30 |
+| SiO as CO, melt volume | 1.05 | 3.28 | 17.1 |
+
+At 100x solar the last row is 0.96, 2.86 and 14.8 GPa. The 1 wt% H boundary then lies above the critical pressure of the H2-MgSiO3 system at 3000 K, about 6.6 GPa (Gilmore & Stixrude 2026), where no sharp boundary exists.
+
+### 6. Benchmark: the silicate content of the gas against first-principles simulations
+
+`benchmark_gs26.py` compares the silicate-to-hydrogen mass ratio of the MEB gas, held at fixed T and P, with the H-rich phase of the two-phase runs of Gilmore & Stixrude (2026, Extended Data Table 1):
+
+| (Si + O + Mg) / H by mass | Simulation | Published fit | Published model | Melt volume only | SiO as CO only | Both |
+|---|---:|---:|---:|---:|---:|---:|
+| 2.05 GPa, 3000 K | 1.41 | 0.26 | 5.96 | 14.1 | 3.85 | 5.15 |
+| 5.14 GPa, 3000 K | 10.3 | 1.56 | 10.7 | 264 | 6.47 | 7.33 |
+| 9.58 GPa, 2500 K | 0.60 | 1.02 | 11.6 | 12,000 | 6.38 | 6.99 |
+| mean misfit (dex) | | | 0.64 | 2.24 | 0.56 | 0.59 |
+
+- Correcting only the melt makes the gas 10 to 20,000 times too silicate-rich. Correcting both sides lands within about 0.6 dex, like the published model.
+- No variant reproduces the 2500 K run, which is about 10 times leaner. That run has a single Si atom in its H-rich phase, so its ratio is uncertain by a large factor.
+- The published fit to the simulations is 5 to 7 times leaner than the simulations themselves at 3000 K, as the audit of the fit on this fork's spinodal branch found.
+- The systems differ: the simulations have MgSiO3, the MEB model SiO2 liquid and no Mg gas. The 2.05 GPa run holds no Mg in its H-rich phase, so there the comparison is direct.
+
 ## What this does and does not show
 
-- **The gas side is still not consistent.** Gases mix ideally, each with its pure-species fugacity coefficient (SiO from Connolly 2016, SiH4 from Wang 2018). A dense H2-silicate fluid has its own mixing volumes, which would resist taking up silicate. So the loss of the boundary shows that the model has no consistent two-phase state, not that the real planet has none. Gilmore & Stixrude (2026) still find two phases at 3000 K below about 6.6 GPa.
-- **What it does show:** the condensed term is as large as the gas terms that models already include. A GPa boundary model that applies one without the other is biased in a known direction, toward a melt that is too stable.
+- **The SiO equation of state is the key unknown.** The CO equation of state used for SiO in sections 5 and 6 is a lower bound on its repulsion, not a fit. Atmodeller has no other SiO equation of state. Whether a GPa-calibrated one exists in the literature has not been checked yet.
+- Gases mix ideally, each with its pure-species fugacity coefficient. A dense H2-silicate fluid has its own mixing volumes.
+- **What the study does show:** the condensed and gas-side volume terms are each large and of opposite sign. A GPa boundary model that corrects one without the other is biased, and the published agreement rests on their cancellation.
 - The setup is the authors', including two choices that this study keeps: SiO2 liquid at unit activity, and the mantle Si and O counted both in the SiO2 liquid and in the background mantle mass, which sets the gravity. A real melt has a lower SiO2 activity, which lowers the vapour but not the correction factor.
 - The solubility laws carry no volume for dissolved H2 or H2O.
 - The parcel is a closed equilibrium: no rainout, quenching or photochemistry.
@@ -84,6 +127,9 @@ uv run python correction_table.py   # seconds
 uv run python boundary_map.py       # about 40 min
 uv run python four_modes.py         # about 15 min
 uv run python bower_iw.py           # about 5 min
+uv run python gas_volume_scan.py    # about 25 min
+uv run python sio_proxy_map.py      # about 10 min
+uv run python benchmark_gs26.py     # about 3 min
 uv run python make_figures.py
 ```
 
