@@ -4,8 +4,6 @@
 
 **Exsolution stays within a few kelvin of equilibrium.** Take a 3 wt% parcel at 2 GPa with the simulated interface width. Homogeneous nucleation then ends metastability 1.2–2.9 K below the binodal in the published fit, and 0.2–1.6 K in refit M1. At most 1.3% of the hydrogen is withheld. So the published 414 K window between binodal and spinodal is a mean-field upper bound. A cooling parcel does not reach it. Refits of the same source data give median windows of 41 to 242 K. A 10% measurement of the composition curvature at 3600 K would lower the spinodal uncertainty only from 80 to 64 K.
 
-The full draft, in the layout of the bachelor thesis, is [paper/main.pdf](paper/main.pdf). It has 35 pages, 12 figures and 6 tables. Most numbers in its text are generated from `outputs/` and `outputs/heat/` by `paper/make_numbers.py` and `paper/make_heat_numbers.py`. Appendix D of the draft lists the values that are still typed by hand.
-
 ## The question
 
 A homogeneous H2–MgSiO3 parcel that cools enters the miscibility gap at the **binodal**. It becomes unstable only at the **spinodal**. In between it is metastable: separation needs nucleation. If nucleation is suppressed, hydrogen release is delayed until the spinodal.
@@ -24,7 +22,7 @@ The table gives the mean-field bound: the window between binodal and spinodal, a
 | Refit M4, most flexible | 3183 | 3072 | 161 (98–284) | 48% |
 | Historical 2025 fit | 3962 | 3908 | 53 | 39.0% |
 
-Binodal and spinodal of the refits are best-fit values. Window and withheld hydrogen are posterior medians. The 95% range of M4 is 62–479 K, and 4.9% of its samples reach the published 414 K, so the most flexible class does not exclude it. The [recalibration table](paper/tables/recalibration.tex) lists all nine refits.
+Binodal and spinodal of the refits are best-fit values. Window and withheld hydrogen are posterior medians. The 95% range of M4 is 62–479 K, and 4.9% of its samples reach the published 414 K, so the most flexible class does not exclude it. `outputs/calibration_summary.json` lists all nine refits.
 
 ### How the audit mismatch was resolved
 
@@ -65,8 +63,6 @@ PYTHONPATH=. uv run python research/spinodal_onset/digitize_source_figure.py
 SPINODAL_WORKERS=2 PYTHONPATH=. uv run python research/spinodal_onset/calibration.py   # workers default 2; about 40 min with 8
 PYTHONPATH=. uv run python research/spinodal_onset/design.py
 PYTHONPATH=. uv run python research/spinodal_onset/make_figures.py
-PYTHONPATH=. uv run python research/spinodal_onset/make_paper_figures.py
-PYTHONPATH=. uv run python research/spinodal_onset/paper/make_numbers.py
 for s in energy edtable2 interior; do
   PYTHONPATH=. uv run python research/spinodal_onset/heat_study.py $s; done
 PYTHONPATH=. uv run python research/spinodal_onset/heat_study.py barriers --start 0 --stop 201
@@ -74,11 +70,7 @@ PYTHONPATH=. uv run python research/spinodal_onset/heat_study.py barriers --star
 for s in delays paths checks planet; do
   PYTHONPATH=. uv run python research/spinodal_onset/heat_study.py $s; done
 cd research/spinodal_onset && PYTHONPATH=../.. uv run python heat_figures.py && cd ../..
-PYTHONPATH=. uv run python research/spinodal_onset/paper/make_heat_numbers.py
-cd research/spinodal_onset/paper && tectonic -X compile main.tex
 ```
-
-`tectonic` fetches the Palatino fonts the thesis layout needs. With a full TeX Live, `latexmk -pdf main.tex` works too.
 
 Check the delivered artifacts with:
 
@@ -88,7 +80,6 @@ PYTHONPATH=. uv run python research/spinodal_onset/verify_artifacts.py
 
 | Files | Purpose |
 |---|---|
-| `paper/` | Draft: LaTeX sources, thesis style, generated numbers and tables, figures, PDF |
 | `mixing_models.py` | Independent scalar solver for T-linear Redlich–Kister models |
 | `digitize_source_figure.py`, `outputs/source_figure_digitized.json` | Published Figure 2a against our implementation |
 | `calibration.py`, `outputs/calibration_*` | Nine recalibrations, posterior samples and diagnostics |

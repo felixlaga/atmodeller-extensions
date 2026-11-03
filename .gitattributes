@@ -1,11 +1,7 @@
 # Preserve binary research artifacts and keep generated data out of code-review diffs.
-research/spinodal_onset/paper/main.pdf binary
-research/spinodal_onset/paper/figures/*.pdf binary
 research/spinodal_onset/sources/*.png binary
 research/spinodal_onset/sources/*.xlsx binary
 research/spinodal_onset/outputs/* linguist-generated=true
 research/spinodal_onset/figures/* linguist-generated=true
 research/spinodal_onset/explorer.html linguist-generated=true
 research/spinodal_onset/validation/*.txt linguist-generated=true
-research/spinodal_onset/paper/numbers.tex linguist-generated=true
-research/spinodal_onset/paper/tables/*.tex linguist-generated=true

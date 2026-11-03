@@ -43,12 +43,12 @@ def snapshot():
         and p.suffix in extensions
         and p != MANIFEST
         and "__pycache__" not in p.parts
-        and not (p.parent.name == "paper" and p.suffix in {".aux", ".log", ".bbl", ".blg", ".out"})
+        and "drafts" not in p.parts
     }
 
 
 def recalibration_checks():
-    """Post-audit analyses: digitization, independent solver, recalibration, design, draft."""
+    """Post-audit analyses: digitization, independent solver, recalibration, design."""
     from research.spinodal_onset.calibration import Problem
     from research.spinodal_onset.mixing_models import published_gilmore26, weight_to_z
 
@@ -81,9 +81,6 @@ def recalibration_checks():
     assert len(samples) == 9 * 2400
     for name in ("design_homogeneous.csv", "design_curvature.csv", "design_summary.json"):
         assert (OUT / name).is_file(), name
-    numbers = (HERE / "paper/numbers.tex").read_text()
-    assert "\\newcommand{\\pubIntTwo}{414}" in numbers
-    assert (HERE / "paper/main.pdf").is_file()
 
 
 def main():

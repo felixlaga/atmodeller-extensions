@@ -91,6 +91,4 @@ plot/
 !research/hydrogen_storage/investigation/figures/*.pdf
 !research/spinodal_study/figures/*.pdf
 !research/spinodal_onset/sources/*.xlsx
-!research/spinodal_onset/paper/main.pdf
-!research/spinodal_onset/paper/figures/*.pdf
 .research-venv/

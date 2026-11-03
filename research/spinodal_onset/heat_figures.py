@@ -31,7 +31,7 @@ from heat_study import (
     native_x,
 )
 
-FIGURES = Path(__file__).resolve().parent / "paper" / "figures"
+FIGURES = Path(__file__).resolve().parent / "figures"
 BLUE, ORANGE, AQUA = "#2a78d6", "#eb6834", "#1baf7a"
 """Default categorical slots 1-3, validated for CVD separation on white"""
 INK, MUTED, GRID = "#1f1f1e", "#6b6b68", "#d9d8d4"
