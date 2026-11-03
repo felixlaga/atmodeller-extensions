@@ -1,0 +1,34 @@
+{
+  "at_2GPa_3wt": {
+    "binodal_K": 3355.9142136526057,
+    "spinodal_K": 2942.17605150403,
+    "interval_K": 413.7381621485756,
+    "H_rich_fraction_at_spinodal": 0.6546756854523474
+  },
+  "parameter_stress_interval_range_K": [
+    328.7912755220782,
+    503.9647791818861
+  ],
+  "parameter_stress_H_fraction_range": [
+    0.6441209982811614,
+    0.662916023516132
+  ],
+  "at_3000K_2GPa_3wt": {
+    "model": "gilmore26",
+    "pressure_GPa": 2.0,
+    "hydrogen_wt_percent": 3.0,
+    "temperature_K": 3000.0,
+    "H_equilibrium_fraction": 0.6144747388442063,
+    "H_delayed_limit_fraction": 0.0,
+    "withheld_H_fraction": 0.6144747388442063,
+    "spinodal_reached": false,
+    "equilibrium_energy_lowering_J_per_native_mol": 2981.5284427855836,
+    "lower_native_x": 0.3736852421783519,
+    "upper_native_x": 0.9949511243353372,
+    "rich_phase_native_mole_fraction": 0.3744627216373227,
+    "lever_rule_error": 0.0
+  },
+  "maximum_pressure_dependence_of_H_fraction_at_spinodal": 7.283782382877524e-06,
+  "maximum_pressure_dependence_excluding_0_1_wt_percent_from_critical": 1.817163086670348e-10,
+  "constructed_3wt_spinodal_shift_K": 16.222096178746597
+}

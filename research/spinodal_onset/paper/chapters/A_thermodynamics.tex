@@ -1,0 +1,145 @@
+\chapter{Thermodynamics of the Mixing Model}\label{app:thermo}
+
+This appendix presents a self-contained theoretical framework for the hydrogen--silicate
+mixing model used in \texttt{Atmodeller}. It unifies the free energy, the composition basis,
+the chemical potentials and the stability conditions. The goal is to provide a physically
+transparent explanation of why the binodal and the spinodal of the published model behave as
+they do, and of which parts of that behaviour come from the model form rather than from the
+data.
+
+\section{Chemical Potentials on the Oxide Basis}
+
+For a binary mixture of oxide units (component 1) and H$_2$ (component 2), with
+$g_{\rm mix}(x)$ per mole of mixing units and $x$ the H$_2$ fraction, the chemical
+potentials relative to the pure components are
+\begin{equation}
+\mu_1 = g_{\rm mix} - x\,g_{\rm mix}', \qquad \mu_2 = g_{\rm mix} + (1-x)\,g_{\rm mix}'.
+\end{equation}
+For Eq.~(\ref{eq:gs26}) with $f = 1-T/\tau+P/\pi$, the excess parts are
+\begin{align}
+\mu_1^{\rm ex} &= f\,x^2\left[B + 2(A-B)(1-x)\right],\\
+\mu_2^{\rm ex} &= f\,(1-x)^2\left[A + 2(B-A)x\right],
+\end{align}
+which is equation~14 of \cite{gilmore2026} written for both components.
+
+\section{Conversion to Native Formula Units}
+
+\texttt{Atmodeller} counts $n_{\rm MgSiO_3}$ and $n_{\rm H_2}$. With
+$G = (2n_{\rm MgSiO_3}+n_{\rm H_2})\,g_{\rm mix}(x)$ and
+$x = n_{\rm H_2}/(2n_{\rm MgSiO_3}+n_{\rm H_2})$,
+\begin{equation}
+\frac{\partial G}{\partial n_{\rm MgSiO_3}} = 2\mu_1, \qquad
+\frac{\partial G}{\partial n_{\rm H_2}} = \mu_2 .
+\end{equation}
+Per native mole, $h(y) = (2-y)\,g_{\rm mix}(x(y))$ with $x = y/(2-y)$ and
+$dx/dy = 2/(2-y)^2$. Differentiating twice gives
+\begin{equation}
+h''(y) = \frac{4\,g_{\rm mix}''(x)}{(2-y)^3}.
+\end{equation}
+The curvature changes magnitude but not sign, so the spinodal is the same in both bases, as it
+must be. The coexisting compositions are also the same once converted with
+Eq.~(\ref{eq:basis}). Importing the published parameters without the factor $2-y$, as in our
+incorrect-basis control, changes the free energy itself and therefore moves both curves.
+
+\section{Spinodal Temperature and Its Threshold}
+
+The excess curvature of Eq.~(\ref{eq:w}) is linear in composition,
+\begin{equation}
+W''(x) = 2B - 4A + 6(A-B)\,x .
+\end{equation}
+Setting $g_{\rm mix}'' = 0$ gives Eq.~(\ref{eq:tsp}). A positive spinodal temperature
+requires $W''(x) < 0$, that is
+\begin{equation}
+x > x_{\rm min} = \frac{2B-4A}{6(B-A)} = 0.262
+\end{equation}
+for the published parameters. This corresponds to $w = \pubThreshold{}$\,wt\% local hydrogen.
+Below this threshold a parcel can still separate in equilibrium, but its homogeneous state
+never becomes unstable: separation there always requires nucleation.
+
+\section{Why the Withheld Fraction Does Not Depend on Pressure}
+
+Write $g_{\rm mix}/(RT) = s(x) + r\,W(x)$, with $s$ the ideal term and
+\begin{equation}
+r(T,P) = \frac{1 - T/\tau + P/\pi}{RT}.
+\end{equation}
+Phase equilibrium and stability depend on $T$ and $P$ only through $r$. At fixed composition
+the spinodal fixes $r_{\rm sp} = -1/[x(1-x)W''(x)]$, and the binodal fixes another value
+$r_b(x)$. Solving $r(T,P) = r_\ast$ gives
+\begin{equation}
+T_\ast(x,P) = \frac{1+P/\pi}{R\,r_\ast + 1/\tau} = T_\ast(x,0)\left(1+\frac{P}{\pi}\right).
+\end{equation}
+Both onset temperatures therefore scale with $1+P/\pi$, and the coexisting compositions at the
+spinodal, hence $f_{\rm H}$, are the same at every pressure. The numerical invariance of
+$f_{\rm H}$ (Section~\ref{sec:inventory}) is a consequence of this separable form, not
+independent evidence. Classes M3 and M4 share it, because all their terms scale with the
+same factor; class M2 does not.
+
+\section{Critical Point}
+
+At the critical point both the second and third derivatives of $g_{\rm mix}$ vanish. For
+Eq.~(\ref{eq:gs26}) this gives equations~17--19 of \cite{gilmore2026}: the ratio $B/A$ fixes
+the critical composition, here $x_C = \pubXc{}$ ($w = \pubWc{}$\,wt\%), and
+\begin{equation}
+T_C(P) = T_C^0\left(1+\frac{P}{\pi}\right), \qquad T_C^0 = \pubTcZero{}\,{\rm K}.
+\end{equation}
+The critical temperature is the same whichever component carries $A$; the critical
+composition is not.
+
+\section{Curvature Change of the Identifiability Perturbation}
+
+For the perturbation of Eq.~(\ref{eq:bump}) with gap width $\Delta x = x_{\rm rich} -
+x_{\rm poor}$,
+\begin{equation}
+\frac{\partial^2 \delta g}{\partial x^2}
+= \lambda B_{\rm gap}\,\frac{384\,u(1-u)(1-5u+5u^2)}{\Delta x^2}.
+\end{equation}
+The change is negative in the middle of the gap ($0.28 < u < 0.72$) and positive near its
+edges, so the perturbation can move the spinodal in either direction. This is why the 3\,wt\% spinodal
+rises while the 5\,wt\% spinodal falls in Figure~\ref{fig:identifiability}. The value,
+first and second derivatives of $\delta g$ vanish at $u=0$ and $u=1$, which keeps every
+equilibrium quantity unchanged.
+
+\section{Energies of Mixing and Separation}\label{app:energy}
+
+\Atm{} obtains the mixing enthalpy, entropy and volume from the native Gibbs energy by
+automatic differentiation, $h = g - T\,\partial g/\partial T$, $s = -\partial g/\partial T$ and
+$v = \partial g/\partial P$. For the published form these reduce to $h = W(x)(1+P/\pi)$ and
+$v = W(x)/\pi$ per oxide-basis mole, and the mixing heat capacity vanishes. The partial molar
+enthalpy of component $i$ is $\bar h_i = -RT^2\,\partial \ln\gamma_i/\partial T$. For H$_2$ on the
+oxide basis,
+\begin{equation}
+\bar h_{\rm H_2} = (1-x)^2\,[A + 2(B-A)\,x]\,(1+P/\pi).
+\end{equation}
+The equilibrium enthalpy of a two-phase state is the lever-rule average of the two phase
+enthalpies. Its temperature derivative at fixed bulk composition is the apparent heat capacity,
+which includes the heat released as the phase compositions move. By the envelope theorem the
+lever-rule entropy and volume equal the temperature and pressure derivatives of the equilibrium
+Gibbs energy; the tests check this to $10^{-9}$. The separation heat of a homogeneous parcel,
+$h_{\rm hom} - h_{\rm eq}$, is zero outside the gap and continuous at the binodal.
+
+For the convecting interior, the melt composition follows the hydrogen-poor binodal at the top
+pressure and the exsolved hydrogen ends as pure H$_2$. The heat released between two top
+temperatures is then the change of the melt's total mixing enthalpy, which equals
+$\int \bar h_{\rm H_2}\,{\rm d}n_{\rm H_2}$ because the mixing heat capacity is zero.
+
+\section{Square-Gradient Nucleation}\label{app:nucleation}
+
+The free energy of a nonuniform parcel is
+$F = v^{-1}\!\int [\Delta g(x) + \kappa\,|\nabla x|^2]\,{\rm d}V$, where
+$\Delta g(x) = g(x) - g(x_0) - g'(x_0)(x - x_0)$ is measured from the tangent at the parent
+composition $x_0$ and $v$ is the volume of one oxide-basis mole \cite{cahn1958,cahn1959}. In
+units of $\ell = (\kappa/RT)^{1/2}$ and $RT$, the critical nucleus solves the radial
+Euler--Lagrange equation $x'' + 2x'/r = \tfrac12\,\partial(\Delta g/RT)/\partial x$, with $x'(0)=0$
+and $x\to x_0$ far away. We find it by shooting on the central composition with bisection
+between overshoot and undershoot. The centre can lie exponentially close to the nucleus
+composition, so the first part of the profile uses the linearised solution
+$\propto \sinh(mr)/(mr)$. The barrier follows from the virial identity,
+$W^* = \tfrac{2}{3}\,v^{-1}\!\int \kappa\,|\nabla x|^2\,{\rm d}V$, and the direct integral checks
+it to 2\%. Because lengths scale with $\ell$, $W^* \propto \kappa^{3/2}/v$ exactly, so one
+dimensionless table per parameter sample serves every $\kappa$ and $v$. The classical estimate
+uses the planar tension $\sigma = 2\,v^{-1}(\kappa RT)^{1/2}\int (\Delta g_{\rm c}/RT)^{1/2}{\rm
+d}x$ between the coexisting phases. A 10--90\% width $w$ of the planar profile gives
+$\kappa = RT\,(w/I)^2$, with $I = \int_{x_{10}}^{x_{90}} (\Delta g_{\rm c}/RT)^{-1/2}{\rm d}x$.
+The solver agrees with an independent finite-volume Newton solution to $10^{-3}$, tends to the
+classical barrier near the binodal, and vanishes as the 3/2 power at the spinodal.
+

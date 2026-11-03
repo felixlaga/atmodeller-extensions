@@ -1,0 +1,89 @@
+Running Sphinx v9.1.0
+loading translations [en]... done
+loading pickled environment... The configuration has changed (3 options: 'nbsphinx_custom_formats', 'nbsphinx_requirejs_options', 'nbsphinx_requirejs_path')
+done
+Writing evaluated template result to /Users/felix/Documents/GitHub/atmodeller/.git/focused-study-docs/_static/nbsphinx-code-cells.css
+checking bibtex cache... up to date
+myst v5.1.0: MdParserConfig(commonmark_only=False, gfm_only=False, enable_extensions=set(), disable_syntax=[], all_links_external=False, links_external_new_tab=False, url_schemes=('http', 'https', 'mailto', 'ftp'), ref_domains=None, fence_as_directive=set(), number_code_blocks=[], title_to_header=False, heading_anchors=0, heading_slug_func=None, html_meta={}, footnote_sort=True, footnote_transition=True, words_per_minute=200, substitutions={}, linkify_fuzzy_links=True, dmath_allow_labels=True, dmath_allow_space=True, dmath_allow_digits=True, dmath_double_inline=False, update_mathjax=True, mathjax_classes='tex2jax_process|mathjax_process|math|output_area', enable_checkboxes=False, strikethrough_single_tilde=False, colon_fence_exact_match=False, suppress_warnings=[], highlight_code_blocks=True)
+building [mo]: targets for 0 po files that are out of date
+writing output... 
+building [html]: targets for 0 source files that are out of date
+updating environment: [config changed ('nbsphinx_custom_formats')] 24 added, 0 changed, 0 removed
+reading sources... [  4%] about
+reading sources... [  8%] bibliography
+reading sources... [ 12%] common_tasks
+reading sources... [ 17%] development
+reading sources... [ 21%] examples/atmosphere
+reading sources... [ 25%] examples/basic_usage
+reading sources... [ 29%] examples/gas_mixing
+reading sources... [ 33%] examples/geological_outgassing
+reading sources... [ 38%] examples/index
+reading sources... [ 42%] examples/trappist1e
+reading sources... [ 46%] index
+reading sources... [ 50%] installation
+reading sources... [ 54%] output
+reading sources... [ 58%] solver
+reading sources... [ 62%] source/atmodeller
+reading sources... [ 67%] source/atmodeller.eos
+reading sources... [ 71%] source/atmodeller.eos.data
+reading sources... [ 75%] source/atmodeller.initializer
+reading sources... [ 79%] source/atmodeller.solubility
+reading sources... [ 83%] source/atmodeller.thermodata
+reading sources... [ 88%] source/modules
+reading sources... [ 92%] spinodal
+reading sources... [ 96%] troubleshooting
+reading sources... [100%] usedin
+
+looking for now-outdated files... none found
+pickling environment... done
+checking consistency... done
+preparing documents... done
+copying assets... 
+copying static files... 
+Writing evaluated template result to /Users/felix/Documents/GitHub/atmodeller/.git/focused-study-docs/_static/basic.css
+Writing evaluated template result to /Users/felix/Documents/GitHub/atmodeller/.git/focused-study-docs/_static/language_data.js
+Writing evaluated template result to /Users/felix/Documents/GitHub/atmodeller/.git/focused-study-docs/_static/documentation_options.js
+Writing evaluated template result to /Users/felix/Documents/GitHub/atmodeller/.git/focused-study-docs/_static/js/versions.js
+copying static files: done
+copying extra files... 
+copying extra files: done
+copying assets: done
+writing output... [  4%] about
+writing output... [  8%] bibliography
+writing output... [ 12%] common_tasks
+writing output... [ 17%] development
+writing output... [ 21%] examples/atmosphere
+writing output... [ 25%] examples/basic_usage
+writing output... [ 29%] examples/gas_mixing
+writing output... [ 33%] examples/geological_outgassing
+writing output... [ 38%] examples/index
+writing output... [ 42%] examples/trappist1e
+writing output... [ 46%] index
+writing output... [ 50%] installation
+writing output... [ 54%] output
+writing output... [ 58%] solver
+writing output... [ 62%] source/atmodeller
+writing output... [ 67%] source/atmodeller.eos
+writing output... [ 71%] source/atmodeller.eos.data
+writing output... [ 75%] source/atmodeller.initializer
+writing output... [ 79%] source/atmodeller.solubility
+writing output... [ 83%] source/atmodeller.thermodata
+writing output... [ 88%] source/modules
+writing output... [ 92%] spinodal
+writing output... [ 96%] troubleshooting
+writing output... [100%] usedin
+
+generating indices... genindex py-modindex done
+copying linked files... 
+copying notebooks ... [ 20%] examples/atmosphere.ipynb
+copying notebooks ... [ 40%] examples/basic_usage.ipynb
+copying notebooks ... [ 60%] examples/gas_mixing.ipynb
+copying notebooks ... [ 80%] examples/geological_outgassing.ipynb
+copying notebooks ... [100%] examples/trappist1e.ipynb
+
+writing additional pages... search done
+dumping search index in English (code: en)... done
+dumping object inventory... done
+build succeeded.
+
+The HTML pages are in .git/focused-study-docs.

@@ -1,0 +1,63 @@
+\chapter{Source Data and Audit Tables}\label{app:source}
+
+This appendix reproduces the source simulations of Gilmore \& Stixrude \cite{gilmore2026} that
+enter the audit and the recalibration, next to the predictions of the published fit. The
+phase-coexistence runs contain 27 MgSiO$_3$ formula units and 92 to 219 hydrogen atoms; the
+homogeneous runs contain 135 to 160 atoms. All
+compositions are H$_2$ mole fractions $x$ on the oxide basis (Eq.~\ref{eq:x}).
+
+\section{Phase-Coexistence Runs}
+
+Table~\ref{tab:ed1} lists all 14 phase-coexistence runs. For runs that kept two phases it gives
+the composition of the H-poor and H-rich phase from ED Table~1 and, where they differ, from the
+digitized Figure~2a. For runs that became homogeneous it gives the bulk composition in
+parentheses. The last column is the published critical temperature at the run pressure minus
+the run temperature: positive values mean the model places the run below $T_C$.
+
+\begin{table}[h]
+\thesiscaption{Phase-coexistence runs of ED Table~1 and the published fit.}{Pressure
+uncertainties in the last digits are given in parentheses. ``same'' means that the digitized
+Figure~2a agrees with the table to within 0.001.}
+\label{tab:ed1}
+\small\centering
+\begin{tabular}{@{}rrcllll@{}}
+\toprule
+$P$ (GPa) & $T$ (K) & Phases & ED Table~1 $x$ & Figure~2a $x$ & Published fit $x$ &
+$T_C - T$ (K)\\
+\midrule
+\inputtable{tables/ed_table1.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+
+In every two-phase run the per-phase atom numbers of ED Table~1 add up to the full simulation
+cell, to within one atom. Each atom, including those in the two interfaces, is therefore
+assigned to one of the two phases. For the 2.05 and 9.58\,GPa runs the table and the figure
+agree to within \digMarker{}. For the 1.65 and 5.14\,GPa runs, which lie closest to the
+critical curve, they differ by up to 0.07.
+
+\section{Homogeneous Excess Properties}
+
+Table~\ref{tab:homogeneous} lists the excess properties reconstructed from ED Table~2 per mole
+of mixing units. The values include the pressure-offset correction described in
+Section~\ref{sec:recalibration}, and the uncertainties include the shared endmember errors. The
+enthalpy entries of different compositions are correlated with coefficients of 0.45 to 0.75,
+the volumes with 0.44 to 0.78.
+
+\begin{table}[h]
+\thesiscaption{Excess properties of the homogeneous simulations at 5.06--5.08\,GPa and
+4,000\,K}{(ED Table~2), with 1$\sigma$ uncertainties, next to the published fit.}
+\label{tab:homogeneous}
+\small\centering
+\begin{tabular}{@{}lllllll@{}}
+\toprule
+& \multicolumn{2}{c}{$H_{\rm ex}$ (kJ\,mol$^{-1}$)} &
+\multicolumn{2}{c}{$S_{\rm ex}$ (J\,mol$^{-1}$\,K$^{-1}$)} &
+\multicolumn{2}{c}{$V_{\rm ex}$ (cm$^3$\,mol$^{-1}$)}\\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+$x$ & simulation & fit & simulation & fit & simulation & fit\\
+\midrule
+\inputtable{tables/homogeneous.tex}
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,0 +1,201 @@
+{
+  "scope": "Closed local binary parcels; thermodynamic and no-nucleation limiting cases, not planetary ages or escape rates.",
+  "critical_points": [
+    {
+      "model": "gilmore26",
+      "critical_x_native": 0.8371897543838078,
+      "critical_z_fit": 0.7199710851706224,
+      "critical_hydrogen_wt_percent": 9.35933584601524,
+      "critical_temperature_zero_pressure_K": 3700.3068450561673,
+      "minimum_spinodal_hydrogen_wt_percent_F_positive": 1.403595354950813
+    },
+    {
+      "model": "rogers25",
+      "critical_x_native": 0.7391300934567396,
+      "critical_z_fit": 0.7391300934567396,
+      "critical_hydrogen_wt_percent": 5.383251861101311,
+      "critical_temperature_zero_pressure_K": 4225.9508423370635,
+      "minimum_spinodal_hydrogen_wt_percent_F_positive": 1.00576594702424
+    },
+    {
+      "model": "wrong_basis_control",
+      "critical_x_native": 0.7199710757594965,
+      "critical_z_fit": 0.7199710757594965,
+      "critical_hydrogen_wt_percent": 4.90941188865011,
+      "critical_temperature_zero_pressure_K": 3700.3068450561677,
+      "minimum_spinodal_hydrogen_wt_percent_F_positive": 0.7067576865046752
+    }
+  ],
+  "onset_rows": 20664,
+  "cooling_rows": 10827,
+  "stress_rows": 375,
+  "native_solver": {
+    "number_solves": 27,
+    "all_accepted": true,
+    "maximum_relative_element_error": 2.220446049250313e-16
+  },
+  "maximum_lever_rule_error": 2.220446049250313e-16,
+  "source_data_audit": {
+    "gilmore26": {
+      "two_phase_count": 4,
+      "two_phase_within_nominal_0_05": 1,
+      "two_phase_within_0_05_allowing_pressure_uncertainty": 1,
+      "single_phase_count": 10,
+      "single_phase_agreements": 10,
+      "maximum_endpoint_error": 0.252055942608172
+    },
+    "rogers25": {
+      "two_phase_count": 4,
+      "two_phase_within_nominal_0_05": 0,
+      "two_phase_within_0_05_allowing_pressure_uncertainty": 0,
+      "single_phase_count": 10,
+      "single_phase_agreements": 9,
+      "maximum_endpoint_error": 0.4804480314102384
+    },
+    "wrong_basis_control": {
+      "two_phase_count": 4,
+      "two_phase_within_nominal_0_05": 0,
+      "two_phase_within_0_05_allowing_pressure_uncertainty": 1,
+      "single_phase_count": 10,
+      "single_phase_agreements": 10,
+      "maximum_endpoint_error": 0.33863206960125725
+    }
+  },
+  "examples": [
+    {
+      "model": "gilmore26",
+      "pressure_GPa": 2.0,
+      "hydrogen_wt_percent": 1.0,
+      "native_x": 0.33467274241826517,
+      "fit_z": 0.20096515017970232,
+      "silicate_rich_bulk": true,
+      "binodal_temperature_K": 2910.0809334718438,
+      "spinodal_temperature_K": null,
+      "metastable_interval_K": null,
+      "H_in_rich_phase_at_spinodal": null,
+      "spinodal_below_2500_K": true,
+      "heating_root_rejected": false,
+      "lever_rule_error": 0.0
+    },
+    {
+      "model": "gilmore26",
+      "pressure_GPa": 2.0,
+      "hydrogen_wt_percent": 3.0,
+      "native_x": 0.6063261552712689,
+      "fit_z": 0.4350559907287964,
+      "silicate_rich_bulk": true,
+      "binodal_temperature_K": 3355.9142136526057,
+      "spinodal_temperature_K": 2942.17605150403,
+      "metastable_interval_K": 413.7381621485756,
+      "H_in_rich_phase_at_spinodal": 0.6546756854523474,
+      "spinodal_below_2500_K": false,
+      "heating_root_rejected": false,
+      "lever_rule_error": 0.0
+    },
+    {
+      "model": "gilmore26",
+      "pressure_GPa": 2.0,
+      "hydrogen_wt_percent": 5.0,
+      "native_x": 0.7238330106257475,
+      "fit_z": 0.5671930214874678,
+      "silicate_rich_bulk": true,
+      "binodal_temperature_K": 3451.1827038877395,
+      "spinodal_temperature_K": 3364.7213642537818,
+      "metastable_interval_K": 86.46133963395778,
+      "H_in_rich_phase_at_spinodal": 0.4194372649599839,
+      "spinodal_below_2500_K": false,
+      "heating_root_rejected": false,
+      "lever_rule_error": 0.0
+    },
+    {
+      "model": "gilmore26",
+      "pressure_GPa": 5.0,
+      "hydrogen_wt_percent": 1.0,
+      "native_x": 0.33467274241826517,
+      "fit_z": 0.20096515017970232,
+      "silicate_rich_bulk": true,
+      "binodal_temperature_K": 2645.52812133804,
+      "spinodal_temperature_K": null,
+      "metastable_interval_K": null,
+      "H_in_rich_phase_at_spinodal": null,
+      "spinodal_below_2500_K": true,
+      "heating_root_rejected": false,
+      "lever_rule_error": 0.0
+    },
+    {
+      "model": "gilmore26",
+      "pressure_GPa": 5.0,
+      "hydrogen_wt_percent": 3.0,
+      "native_x": 0.6063261552712689,
+      "fit_z": 0.4350559907287964,
+      "silicate_rich_bulk": true,
+      "binodal_temperature_K": 3050.831103320551,
+      "spinodal_temperature_K": 2674.7055013673003,
+      "metastable_interval_K": 376.1256019532507,
+      "H_in_rich_phase_at_spinodal": 0.6546756854523462,
+      "spinodal_below_2500_K": false,
+      "heating_root_rejected": false,
+      "lever_rule_error": 0.0
+    },
+    {
+      "model": "gilmore26",
+      "pressure_GPa": 5.0,
+      "hydrogen_wt_percent": 5.0,
+      "native_x": 0.7238330106257475,
+      "fit_z": 0.5671930214874678,
+      "silicate_rich_bulk": true,
+      "binodal_temperature_K": 3137.438821716127,
+      "spinodal_temperature_K": 3058.8376038670744,
+      "metastable_interval_K": 78.60121784905277,
+      "H_in_rich_phase_at_spinodal": 0.41943726495998185,
+      "spinodal_below_2500_K": false,
+      "heating_root_rejected": false,
+      "lever_rule_error": 0.0
+    },
+    {
+      "model": "gilmore26",
+      "pressure_GPa": 10.0,
+      "hydrogen_wt_percent": 1.0,
+      "native_x": 0.33467274241826517,
+      "fit_z": 0.20096515017970232,
+      "silicate_rich_bulk": true,
+      "binodal_temperature_K": 2204.6067677817,
+      "spinodal_temperature_K": null,
+      "metastable_interval_K": null,
+      "H_in_rich_phase_at_spinodal": null,
+      "spinodal_below_2500_K": true,
+      "heating_root_rejected": false,
+      "lever_rule_error": 0.0
+    },
+    {
+      "model": "gilmore26",
+      "pressure_GPa": 10.0,
+      "hydrogen_wt_percent": 3.0,
+      "native_x": 0.6063261552712689,
+      "fit_z": 0.4350559907287964,
+      "silicate_rich_bulk": true,
+      "binodal_temperature_K": 2542.3592527671253,
+      "spinodal_temperature_K": 2228.9212511394167,
+      "metastable_interval_K": 313.4380016277087,
+      "H_in_rich_phase_at_spinodal": 0.6546756854523469,
+      "spinodal_below_2500_K": true,
+      "heating_root_rejected": false,
+      "lever_rule_error": 0.0
+    },
+    {
+      "model": "gilmore26",
+      "pressure_GPa": 10.0,
+      "hydrogen_wt_percent": 5.0,
+      "native_x": 0.7238330106257475,
+      "fit_z": 0.5671930214874678,
+      "silicate_rich_bulk": true,
+      "binodal_temperature_K": 2614.532351430106,
+      "spinodal_temperature_K": 2549.0313365558955,
+      "metastable_interval_K": 65.50101487421034,
+      "H_in_rich_phase_at_spinodal": 0.41943726495998335,
+      "spinodal_below_2500_K": false,
+      "heating_root_rejected": false,
+      "lever_rule_error": 0.0
+    }
+  ]
+}

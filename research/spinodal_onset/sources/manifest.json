@@ -1,0 +1,42 @@
+[
+  {
+    "file": "EDTable1.xlsx",
+    "url": "https://zenodo.org/records/17716049/files/EDTable1.xlsx",
+    "sha256": "fcdbc7f106668997396f9c97ddc511dc99dd16e2486b8c1006739cc24886395a",
+    "license": "CC-BY-4.0",
+    "attribution": "Gilmore and Stixrude (2026), DOI 10.1038/s41586-025-09970-4; data DOI 10.5281/zenodo.17716049",
+    "retrieved_utc": "2026-10-29"
+  },
+  {
+    "file": "EDTable2.xlsx",
+    "url": "https://zenodo.org/records/17716049/files/EDTable2.xlsx",
+    "sha256": "b0f9756c74ab07a2bb05d413b21c23efde12cb1fbff43b58edf01dede1ad07e5",
+    "license": "CC-BY-4.0",
+    "attribution": "Gilmore and Stixrude (2026), DOI 10.1038/s41586-025-09970-4; data DOI 10.5281/zenodo.17716049",
+    "retrieved_utc": "2026-10-29"
+  },
+  {
+    "file": "RYS25_Fig5_miscible_digitized.json",
+    "sha256": "8afebe56df26faa7ec2ca80b1cf3f4b132015912d9b482399984c90a4cf79e12",
+    "figure": "Fig. 5, miscible model (blue): binodal temperature and pressure, fraction of total hydrogen stored in the interior; 6 Earth masses, 3% hydrogen, T_eq = 1000 K",
+    "source_url": "https://arxiv.org/html/2509.13320v1/ModelComplexityEvolutionCombined.svg",
+    "source_sha256": "a2c6e1aa83547a2f80443b4dba3d4573a1c2c9880955f3ad0ebed645c380c071",
+    "method": "Polyline vertices of the SVG paths (indices 1608, 1905 and 799), mapped to axes calibrated on the tick marks: log10 t = 7 + (x - 288.368 - offset)/38.7155 with offset 0 for T and 220.014 for P and F, T = 3000 K + (y - 61.53)/41.7675 kK, log10 P/Pa = 8 + (y - 62.39)/72.235, F = (y - 298.73)/144.58",
+    "license": "arXiv preprint; digitized values only, figure not redistributed",
+    "attribution": "Rogers, Young and Schlichting (2025), MNRAS 544, 3496; arXiv 2509.13320v1",
+    "accuracy": "digitized, a few % error",
+    "retrieved_utc": "2026-10-31"
+  },
+  {
+    "file": "RYS25_Fig6_miscible_digitized.json",
+    "sha256": "d953592f51b620f1fc8087694e1efdf000779fc7c17f4af25dacc8de932986f0",
+    "figure": "Fig. 6, right panel (miscible model): radiative luminosity at the radiative-convective boundary and the gravitational (-dU/dt) and thermal (-dE/dt) terms of silicate and hydrogen; the negative branch of -dE_sil/dt is the grey line",
+    "source_url": "https://arxiv.org/html/2509.13320v1/EnergyBudget.svg",
+    "source_sha256": "7810f3a4fbd30b9faba97beea10db9fa8c1f7a0d2c566c9cf02261582462a0ce",
+    "method": "Polyline vertices of the SVG paths (indices 834-839), mapped to axes calibrated on the tick marks: log10 t = 7 + (x - 468.10533)/77.466, log10 L/(erg/s) = 20 + (y - 54.22307)/33.9595",
+    "license": "arXiv preprint; digitized values only, figure not redistributed",
+    "attribution": "Rogers, Young and Schlichting (2025), MNRAS 544, 3496; arXiv 2509.13320v1",
+    "accuracy": "digitized, a few % error",
+    "retrieved_utc": "2026-10-31"
+  }
+]

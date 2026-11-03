@@ -1,0 +1,17 @@
+{
+  "script_sha256": "86977622fa062f3fbd87cc3b1c78e5973b43465ec0b4968672d01ad9275addb9",
+  "minimum_sampled_support_margin_J_per_fit_mol": -3.637978807091713e-12,
+  "maximum_endpoint_energy_or_curvature_change": 0.0,
+  "homogeneous_EDTable2_states_unchanged": true,
+  "maximum_relative_curvature_error_against_autodiff": 5.654266905675513e-16,
+  "heat_capacity_baseline_kB_per_atom": 3.2,
+  "admissible_amplitude": 0.21615874606779825,
+  "most_negative_bump_heat_capacity_kB_per_atom_per_unit_amplitude": -14.803934877547446,
+  "most_negative_bump_heat_capacity_at": {
+    "fit_z": 0.6785931875383454,
+    "temperature_K": 3478.586347634123,
+    "critical_K": 3488.8607396243865
+  },
+  "bump_heat_capacity_relative_error_against_finite_difference": 5.912159734455802e-05,
+  "scope": "Constructed thermodynamic counterexample; amplitudes are not calibrated material uncertainties. They are capped so that every homogeneous state inside the gap keeps a positive heat capacity."
+}

@@ -1,0 +1,119 @@
+{
+ "published/equilibrium/isenthalpic": {
+  "binodal_K": 3355.9142136472374,
+  "onset_K": 3355.9142136472374,
+  "separation_K": 3355.9142136472374,
+  "released_MJ_per_kg": 0.0,
+  "final_heat_lost_MJ_per_kg": 3.418572464325919,
+  "valid": true
+ },
+ "published/spinodal/isenthalpic": {
+  "binodal_K": 3355.9142136472374,
+  "onset_K": 2942.17605150403,
+  "separation_K": 3228.5036880490934,
+  "released_MJ_per_kg": 1.2020117947493445,
+  "final_heat_lost_MJ_per_kg": 3.418572464325919,
+  "valid": true
+ },
+ "published/spinodal/isothermal": {
+  "binodal_K": 3355.9142136472374,
+  "onset_K": 2942.17605150403,
+  "separation_K": 2942.17605150403,
+  "released_MJ_per_kg": 1.2020117947493445,
+  "final_heat_lost_MJ_per_kg": 3.418572464325919,
+  "valid": true
+ },
+ "published/nucleation_L69/isenthalpic": {
+  "binodal_K": 3355.9142136472374,
+  "onset_K": 3353.807650315265,
+  "separation_K": 3355.363809551759,
+  "released_MJ_per_kg": 0.01174488075242043,
+  "final_heat_lost_MJ_per_kg": 3.418572464325919,
+  "valid": true
+ },
+ "published/nucleation_L69/isothermal": {
+  "binodal_K": 3355.9142136472374,
+  "onset_K": 3353.807650315265,
+  "separation_K": 3353.807650315265,
+  "released_MJ_per_kg": 0.01174488075242043,
+  "final_heat_lost_MJ_per_kg": 3.418572464325919,
+  "valid": true
+ },
+ "published/nucleation_L123/isenthalpic": {
+  "binodal_K": 3355.9142136472374,
+  "onset_K": 3354.3451918881146,
+  "separation_K": 3355.5043420081265,
+  "released_MJ_per_kg": 0.008757250683416774,
+  "final_heat_lost_MJ_per_kg": 3.418572464325919,
+  "valid": true
+ },
+ "published/nucleation_L123/isothermal": {
+  "binodal_K": 3355.9142136472374,
+  "onset_K": 3354.3451918881146,
+  "separation_K": 3354.3451918881146,
+  "released_MJ_per_kg": 0.008757250683416774,
+  "final_heat_lost_MJ_per_kg": 3.418572464325919,
+  "valid": true
+ },
+ "M1_MAP/equilibrium/isenthalpic": {
+  "binodal_K": 3189.368440778627,
+  "onset_K": 3189.368440778627,
+  "separation_K": 3189.368440778627,
+  "released_MJ_per_kg": 0.0,
+  "final_heat_lost_MJ_per_kg": 3.587813931763131,
+  "valid": true
+ },
+ "M1_MAP/spinodal/isenthalpic": {
+  "binodal_K": 3189.368440778627,
+  "onset_K": 3106.7773693777494,
+  "separation_K": 3170.8443387440893,
+  "released_MJ_per_kg": 0.5012880772728594,
+  "final_heat_lost_MJ_per_kg": 3.587813931763131,
+  "valid": true
+ },
+ "M1_MAP/spinodal/isothermal": {
+  "binodal_K": 3189.368440778627,
+  "onset_K": 3106.7773693777494,
+  "separation_K": 3106.7773693777494,
+  "released_MJ_per_kg": 0.5012880772728594,
+  "final_heat_lost_MJ_per_kg": 3.587813931763131,
+  "valid": true
+ },
+ "M1_MAP/nucleation_L69/isenthalpic": {
+  "binodal_K": 3189.368440778627,
+  "onset_K": 3188.9037758692684,
+  "separation_K": 3189.266942160736,
+  "released_MJ_per_kg": 0.0032779230904352854,
+  "final_heat_lost_MJ_per_kg": 3.587813931763131,
+  "valid": true
+ },
+ "M1_MAP/nucleation_L69/isothermal": {
+  "binodal_K": 3189.368440778627,
+  "onset_K": 3188.9037758692684,
+  "separation_K": 3188.9037758692684,
+  "released_MJ_per_kg": 0.0032779230904352854,
+  "final_heat_lost_MJ_per_kg": 3.587813931763131,
+  "valid": true
+ },
+ "M1_MAP/nucleation_L123/isenthalpic": {
+  "binodal_K": 3189.368440778627,
+  "onset_K": 3189.0220966607394,
+  "separation_K": 3189.2927902879364,
+  "released_MJ_per_kg": 0.0024437938012560863,
+  "final_heat_lost_MJ_per_kg": 3.587813931763131,
+  "valid": true
+ },
+ "M1_MAP/nucleation_L123/isothermal": {
+  "binodal_K": 3189.368440778627,
+  "onset_K": 3189.0220966607394,
+  "separation_K": 3189.0220966607394,
+  "released_MJ_per_kg": 0.0024437938012560863,
+  "final_heat_lost_MJ_per_kg": 3.587813931763131,
+  "valid": true
+ },
+ "engine_replay": {
+  "rows": 80,
+  "all_success": true,
+  "max_relative_difference": 8.881784197001252e-16
+ }
+}

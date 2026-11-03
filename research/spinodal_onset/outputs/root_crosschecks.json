@@ -1,0 +1,320 @@
+[
+  {
+    "model": "gilmore26",
+    "pressure_GPa": 2.0,
+    "hydrogen_wt_percent": 1.0,
+    "binodal_composition_error": 2.2863932969130474e-12,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true
+  },
+  {
+    "model": "gilmore26",
+    "pressure_GPa": 2.0,
+    "hydrogen_wt_percent": 3.0,
+    "binodal_composition_error": 5.248024237403115e-12,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 0.0
+  },
+  {
+    "model": "gilmore26",
+    "pressure_GPa": 2.0,
+    "hydrogen_wt_percent": 5.0,
+    "binodal_composition_error": 3.749334176461616e-12,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 9.094947017729282e-13
+  },
+  {
+    "model": "gilmore26",
+    "pressure_GPa": 2.0,
+    "hydrogen_wt_percent": 10.0,
+    "binodal_composition_error": 1.3017920075242273e-11,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 0.0
+  },
+  {
+    "model": "gilmore26",
+    "pressure_GPa": 5.0,
+    "hydrogen_wt_percent": 1.0,
+    "binodal_composition_error": 2.2863932969130474e-12,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true
+  },
+  {
+    "model": "gilmore26",
+    "pressure_GPa": 5.0,
+    "hydrogen_wt_percent": 3.0,
+    "binodal_composition_error": 5.248024237403115e-12,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 0.0
+  },
+  {
+    "model": "gilmore26",
+    "pressure_GPa": 5.0,
+    "hydrogen_wt_percent": 5.0,
+    "binodal_composition_error": 3.746891685807441e-12,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 4.547473508864641e-13
+  },
+  {
+    "model": "gilmore26",
+    "pressure_GPa": 5.0,
+    "hydrogen_wt_percent": 10.0,
+    "binodal_composition_error": 1.3056444814196766e-11,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 4.547473508864641e-13
+  },
+  {
+    "model": "gilmore26",
+    "pressure_GPa": 10.0,
+    "hydrogen_wt_percent": 1.0,
+    "binodal_composition_error": 2.2863932969130474e-12,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true
+  },
+  {
+    "model": "gilmore26",
+    "pressure_GPa": 10.0,
+    "hydrogen_wt_percent": 3.0,
+    "binodal_composition_error": 5.248024237403115e-12,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 0.0
+  },
+  {
+    "model": "gilmore26",
+    "pressure_GPa": 10.0,
+    "hydrogen_wt_percent": 5.0,
+    "binodal_composition_error": 3.746891685807441e-12,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 0.0
+  },
+  {
+    "model": "gilmore26",
+    "pressure_GPa": 10.0,
+    "hydrogen_wt_percent": 10.0,
+    "binodal_composition_error": 1.3017920075242273e-11,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 0.0
+  },
+  {
+    "model": "rogers25",
+    "pressure_GPa": 2.0,
+    "hydrogen_wt_percent": 1.0,
+    "binodal_composition_error": 3.0750402224555273e-12,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true
+  },
+  {
+    "model": "rogers25",
+    "pressure_GPa": 2.0,
+    "hydrogen_wt_percent": 3.0,
+    "binodal_composition_error": 1.1265655075476388e-11,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 0.0
+  },
+  {
+    "model": "rogers25",
+    "pressure_GPa": 2.0,
+    "hydrogen_wt_percent": 5.0,
+    "binodal_composition_error": 3.757594235764827e-11,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 0.0
+  },
+  {
+    "model": "rogers25",
+    "pressure_GPa": 2.0,
+    "hydrogen_wt_percent": 10.0,
+    "binodal_composition_error": 4.766853578530572e-12,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 0.0
+  },
+  {
+    "model": "rogers25",
+    "pressure_GPa": 5.0,
+    "hydrogen_wt_percent": 1.0,
+    "binodal_composition_error": 3.074929200153065e-12,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true
+  },
+  {
+    "model": "rogers25",
+    "pressure_GPa": 5.0,
+    "hydrogen_wt_percent": 3.0,
+    "binodal_composition_error": 1.1266876320803476e-11,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 0.0
+  },
+  {
+    "model": "rogers25",
+    "pressure_GPa": 5.0,
+    "hydrogen_wt_percent": 5.0,
+    "binodal_composition_error": 3.736222442540793e-11,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 4.547473508864641e-13
+  },
+  {
+    "model": "rogers25",
+    "pressure_GPa": 5.0,
+    "hydrogen_wt_percent": 10.0,
+    "binodal_composition_error": 4.766631533925647e-12,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 4.547473508864641e-13
+  },
+  {
+    "model": "rogers25",
+    "pressure_GPa": 10.0,
+    "hydrogen_wt_percent": 1.0,
+    "binodal_composition_error": 3.074929200153065e-12,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true
+  },
+  {
+    "model": "rogers25",
+    "pressure_GPa": 10.0,
+    "hydrogen_wt_percent": 3.0,
+    "binodal_composition_error": 1.1267542454618251e-11,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 0.0
+  },
+  {
+    "model": "rogers25",
+    "pressure_GPa": 10.0,
+    "hydrogen_wt_percent": 5.0,
+    "binodal_composition_error": 3.7835956590015485e-11,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 0.0
+  },
+  {
+    "model": "rogers25",
+    "pressure_GPa": 10.0,
+    "hydrogen_wt_percent": 10.0,
+    "binodal_composition_error": 4.765299266296097e-12,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 4.547473508864641e-13
+  },
+  {
+    "model": "wrong_basis_control",
+    "pressure_GPa": 2.0,
+    "hydrogen_wt_percent": 1.0,
+    "binodal_composition_error": 2.4780177909633494e-13,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 6.821210263296962e-13
+  },
+  {
+    "model": "wrong_basis_control",
+    "pressure_GPa": 2.0,
+    "hydrogen_wt_percent": 3.0,
+    "binodal_composition_error": 1.189681686497579e-11,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 4.547473508864641e-13
+  },
+  {
+    "model": "wrong_basis_control",
+    "pressure_GPa": 2.0,
+    "hydrogen_wt_percent": 5.0,
+    "binodal_composition_error": 1.506283986429935e-10,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 0.0
+  },
+  {
+    "model": "wrong_basis_control",
+    "pressure_GPa": 2.0,
+    "hydrogen_wt_percent": 10.0,
+    "binodal_composition_error": 3.828826145024777e-12,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 4.547473508864641e-13
+  },
+  {
+    "model": "wrong_basis_control",
+    "pressure_GPa": 5.0,
+    "hydrogen_wt_percent": 1.0,
+    "binodal_composition_error": 2.483568906086475e-13,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 0.0
+  },
+  {
+    "model": "wrong_basis_control",
+    "pressure_GPa": 5.0,
+    "hydrogen_wt_percent": 3.0,
+    "binodal_composition_error": 1.189193188366744e-11,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 4.547473508864641e-13
+  },
+  {
+    "model": "wrong_basis_control",
+    "pressure_GPa": 5.0,
+    "hydrogen_wt_percent": 5.0,
+    "binodal_composition_error": 8.983180865840268e-11,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 4.547473508864641e-13
+  },
+  {
+    "model": "wrong_basis_control",
+    "pressure_GPa": 5.0,
+    "hydrogen_wt_percent": 10.0,
+    "binodal_composition_error": 3.82938125653709e-12,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 0.0
+  },
+  {
+    "model": "wrong_basis_control",
+    "pressure_GPa": 10.0,
+    "hydrogen_wt_percent": 1.0,
+    "binodal_composition_error": 2.4741320103771614e-13,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 0.0
+  },
+  {
+    "model": "wrong_basis_control",
+    "pressure_GPa": 10.0,
+    "hydrogen_wt_percent": 3.0,
+    "binodal_composition_error": 1.189681686497579e-11,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 9.094947017729282e-13
+  },
+  {
+    "model": "wrong_basis_control",
+    "pressure_GPa": 10.0,
+    "hydrogen_wt_percent": 5.0,
+    "binodal_composition_error": 1.7216394976315996e-10,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 4.547473508864641e-13
+  },
+  {
+    "model": "wrong_basis_control",
+    "pressure_GPa": 10.0,
+    "hydrogen_wt_percent": 10.0,
+    "binodal_composition_error": 3.8297143234444775e-12,
+    "above_binodal_two_phase": false,
+    "below_binodal_two_phase": true,
+    "spinodal_temperature_independent_error_K": 0.0
+  }
+]

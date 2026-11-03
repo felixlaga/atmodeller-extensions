@@ -1,0 +1,220 @@
+{
+  "target": "spinodal temperature at 3 wt% local H and 2 GPa",
+  "method": "linear-Gaussian expected posterior SD from recalibration samples",
+  "best_single_homogeneous_composition": [
+    {
+      "group": "M1",
+      "composition_x": 0.3,
+      "precision": "ED Table 2 precision",
+      "current_sd_K": 42.00610672822384,
+      "expected_sd_K": 38.47802835453103
+    },
+    {
+      "group": "M2",
+      "composition_x": 0.35,
+      "precision": "ED Table 2 precision",
+      "current_sd_K": 45.16229164892035,
+      "expected_sd_K": 41.03939358643076
+    },
+    {
+      "group": "M3",
+      "composition_x": 0.45,
+      "precision": "ED Table 2 precision",
+      "current_sd_K": 43.87662626592465,
+      "expected_sd_K": 41.90713968002934
+    },
+    {
+      "group": "pooled (equal class weights)",
+      "composition_x": 0.35,
+      "precision": "ED Table 2 precision",
+      "current_sd_K": 80.17838218357689,
+      "expected_sd_K": 71.56782297418833
+    },
+    {
+      "group": "M4",
+      "composition_x": 0.05,
+      "precision": "ED Table 2 precision",
+      "current_sd_K": 105.95320986839013,
+      "expected_sd_K": 101.43474953845895
+    }
+  ],
+  "curvature": [
+    {
+      "group": "M1",
+      "temperature_K": 3200.0,
+      "fraction_locally_stable": 0.9983333333333333,
+      "fraction_one_phase": 0.7925,
+      "fraction_metastable": 0.20583333333333334,
+      "median_curvature_J_per_mol": 15993.821445912636,
+      "noise_J_per_mol": 1599.3821445912636,
+      "current_sd_K": 42.00610672822384,
+      "expected_sd_K": 13.293866444413627
+    },
+    {
+      "group": "M1",
+      "temperature_K": 3400.0,
+      "fraction_locally_stable": 1.0,
+      "fraction_one_phase": 1.0,
+      "fraction_metastable": 0.0,
+      "median_curvature_J_per_mol": 44001.14535308529,
+      "noise_J_per_mol": 4400.114535308529,
+      "current_sd_K": 42.00610672822384,
+      "expected_sd_K": 28.564813645817086
+    },
+    {
+      "group": "M1",
+      "temperature_K": 3600.0,
+      "fraction_locally_stable": 1.0,
+      "fraction_one_phase": 1.0,
+      "fraction_metastable": 0.0,
+      "median_curvature_J_per_mol": 72097.96557707623,
+      "noise_J_per_mol": 7209.796557707624,
+      "current_sd_K": 42.00610672822384,
+      "expected_sd_K": 35.35181251484335
+    },
+    {
+      "group": "M2",
+      "temperature_K": 3200.0,
+      "fraction_locally_stable": 0.88,
+      "fraction_one_phase": 0.6375,
+      "fraction_metastable": 0.2425,
+      "median_curvature_J_per_mol": 7264.77090586273,
+      "noise_J_per_mol": 741.9947391769356,
+      "current_sd_K": 45.16229164892035,
+      "expected_sd_K": 8.600768482848713
+    },
+    {
+      "group": "M2",
+      "temperature_K": 3400.0,
+      "fraction_locally_stable": 1.0,
+      "fraction_one_phase": 1.0,
+      "fraction_metastable": 0.0,
+      "median_curvature_J_per_mol": 34873.16747265516,
+      "noise_J_per_mol": 3487.316747265516,
+      "current_sd_K": 45.16229164892035,
+      "expected_sd_K": 27.91523849530044
+    },
+    {
+      "group": "M2",
+      "temperature_K": 3600.0,
+      "fraction_locally_stable": 1.0,
+      "fraction_one_phase": 1.0,
+      "fraction_metastable": 0.0,
+      "median_curvature_J_per_mol": 62417.158718810606,
+      "noise_J_per_mol": 6241.715871881061,
+      "current_sd_K": 45.16229164892035,
+      "expected_sd_K": 36.60164060048578
+    },
+    {
+      "group": "M3",
+      "temperature_K": 3200.0,
+      "fraction_locally_stable": 0.9766666666666667,
+      "fraction_one_phase": 0.5283333333333333,
+      "fraction_metastable": 0.4483333333333333,
+      "median_curvature_J_per_mol": 15595.593843173509,
+      "noise_J_per_mol": 1560.4419436757373,
+      "current_sd_K": 43.87662626592465,
+      "expected_sd_K": 12.790274793726756
+    },
+    {
+      "group": "M3",
+      "temperature_K": 3400.0,
+      "fraction_locally_stable": 1.0,
+      "fraction_one_phase": 1.0,
+      "fraction_metastable": 0.0,
+      "median_curvature_J_per_mol": 49607.65323621254,
+      "noise_J_per_mol": 4960.7653236212545,
+      "current_sd_K": 43.87662626592465,
+      "expected_sd_K": 32.86684051883668
+    },
+    {
+      "group": "M3",
+      "temperature_K": 3600.0,
+      "fraction_locally_stable": 1.0,
+      "fraction_one_phase": 1.0,
+      "fraction_metastable": 0.0,
+      "median_curvature_J_per_mol": 83852.87065801409,
+      "noise_J_per_mol": 8385.287065801409,
+      "current_sd_K": 43.87662626592465,
+      "expected_sd_K": 40.48663945043455
+    },
+    {
+      "group": "M4",
+      "temperature_K": 3200.0,
+      "fraction_locally_stable": 0.9925,
+      "fraction_one_phase": 0.4716666666666667,
+      "fraction_metastable": 0.5208333333333334,
+      "median_curvature_J_per_mol": 26176.521432399782,
+      "noise_J_per_mol": 2617.6521432399786,
+      "current_sd_K": 105.95320986839013,
+      "expected_sd_K": 34.64002910167104
+    },
+    {
+      "group": "M4",
+      "temperature_K": 3400.0,
+      "fraction_locally_stable": 1.0,
+      "fraction_one_phase": 0.9995833333333334,
+      "fraction_metastable": 0.0004166666666666667,
+      "median_curvature_J_per_mol": 58747.37400787711,
+      "noise_J_per_mol": 5874.7374007877115,
+      "current_sd_K": 105.95320986839013,
+      "expected_sd_K": 68.97626481838049
+    },
+    {
+      "group": "M4",
+      "temperature_K": 3600.0,
+      "fraction_locally_stable": 1.0,
+      "fraction_one_phase": 1.0,
+      "fraction_metastable": 0.0,
+      "median_curvature_J_per_mol": 91151.9482700672,
+      "noise_J_per_mol": 9115.19482700672,
+      "current_sd_K": 105.95320986839013,
+      "expected_sd_K": 93.78117512307149
+    },
+    {
+      "group": "pooled (equal class weights)",
+      "temperature_K": 3200.0,
+      "fraction_locally_stable": 0.961875,
+      "fraction_one_phase": 0.6075,
+      "fraction_metastable": 0.354375,
+      "median_curvature_J_per_mol": 15267.667766873494,
+      "noise_J_per_mol": 1526.8218226642955,
+      "current_sd_K": 80.17838218357689,
+      "expected_sd_K": 21.62515027008848
+    },
+    {
+      "group": "pooled (equal class weights)",
+      "temperature_K": 3400.0,
+      "fraction_locally_stable": 1.0,
+      "fraction_one_phase": 0.9998958333333333,
+      "fraction_metastable": 0.00010416666666666667,
+      "median_curvature_J_per_mol": 46235.627385980115,
+      "noise_J_per_mol": 4623.5627385980115,
+      "current_sd_K": 80.17838218357689,
+      "expected_sd_K": 48.628430857053424
+    },
+    {
+      "group": "pooled (equal class weights)",
+      "temperature_K": 3600.0,
+      "fraction_locally_stable": 1.0,
+      "fraction_one_phase": 1.0,
+      "fraction_metastable": 0.0,
+      "median_curvature_J_per_mol": 76965.30506171574,
+      "noise_J_per_mol": 7696.530506171574,
+      "current_sd_K": 80.17838218357689,
+      "expected_sd_K": 64.15125975233575
+    }
+  ],
+  "curvature_measurement": {
+    "rule": "pooled samples; lowest screened temperature at which every sample is one phase",
+    "group": "pooled (equal class weights)",
+    "temperature_K": 3600.0,
+    "fraction_locally_stable": 1.0,
+    "fraction_one_phase": 1.0,
+    "fraction_metastable": 0.0,
+    "median_curvature_J_per_mol": 76965.30506171574,
+    "noise_J_per_mol": 7696.530506171574,
+    "current_sd_K": 80.17838218357689,
+    "expected_sd_K": 64.15125975233575
+  }
+}
