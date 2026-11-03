@@ -8,8 +8,8 @@ import numpy as np
 import pytest
 
 from atmodeller import ChemicalSpecies, EquilibriumModel, SolverParameters, SubregularSolution
-from atmodeller.cooling import ParcelCooling, solve_path_with_engine
-from atmodeller.thermodata import default_properties
+from atmodeller.cooling import ParcelCooling, nucleation_onset_temperature, solve_path_with_engine
+from atmodeller.thermodata.defaults import default_properties
 
 P = 20000.0
 """2 GPa in bar"""
@@ -148,4 +148,147 @@ def test_engine_path_agrees_with_the_fast_functions(parcel):
     np.testing.assert_allclose(engine["mixing_enthalpy"], path.mixing_enthalpy, rtol=1e-8)
     np.testing.assert_allclose(
         engine["upper_fraction"], path.upper_fraction, rtol=1e-8, atol=1e-12
+    )
+
+
+@pytest.mark.parametrize(
+    "criterion,theory,expected",
+    # Independent SciPy solutions: 0.3 nm interface at 2 GPa and 3000 K, 18.19 cm³/mol.
+    [
+        (69.0776, "square_gradient", 5.57),
+        (123.186, "square_gradient", 4.11),
+        (69.0776, "classical", 5.67),
+        (123.186, "classical", 4.17),
+    ],
+)
+def test_nucleation_ends_the_delay_a_few_kelvin_below_the_binodal(
+    parcel, criterion, theory, expected
+):
+    model, x = parcel.mixing_model, parcel.composition
+    kappa = model.gradient_coefficient(3000.0, P, 0.3e-9)
+    onset = nucleation_onset_temperature(model, P, x, kappa, 1.819e-5, criterion, theory=theory)
+    delay = float(model.binodal_temperature(P, x) - onset)
+    assert delay == pytest.approx(expected, abs=0.02)
+    path = parcel.path(3600.0, 2600.0, onset, steps=20)
+    assert bool(path.valid)
+    # Nucleation-limited separation is close to equilibrium: little reheating.
+    assert float(path.separation_temperature - path.onset_temperature) < delay
+
+
+def test_interior_tracks_the_binodal_and_releases_the_hydrogen_partial_enthalpy():
+    from atmodeller.cooling import InteriorCooling
+
+    model = SubregularSolution.hydrogen_silicate_gilmore26()
+    interior = InteriorCooling.from_species(mixture(), model, P, mass_fraction=0.03)
+    path = interior.path(3600.0, 2800.0, steps=400)
+    assert bool(path.valid)
+    t, x = np.asarray(path.temperature), np.asarray(path.composition)
+    onset = float(model.binodal_temperature(P, interior.initial_composition))
+    np.testing.assert_allclose(x[t > onset], interior.initial_composition, rtol=1e-12)
+    below = t < onset - 1
+    lower = model.coexistence(t[below], P).lower
+    np.testing.assert_allclose(x[below], lower, rtol=1e-9)
+    # Heat per kg of exsolved hydrogen: the H2 partial enthalpy, 40-75 MJ/kg.
+    per_kg = float(path.exsolution_heat[-1] / path.exsolved_hydrogen[-1])
+    assert 40e6 < per_kg < 75e6
+    # Energy bookkeeping: heat lost is sensible plus exsolution heat.
+    np.testing.assert_allclose(
+        path.heat_lost, path.sensible_heat + path.exsolution_heat, rtol=1e-12, atol=1e-6
+    )
+    ratio = np.asarray(path.heat_capacity_ratio)
+    assert np.all(np.abs(ratio[t > onset]) < 1e-12) and np.all(ratio[below] > 0)
+
+
+def test_interior_exsolution_heat_matches_the_integral_of_the_partial_enthalpy():
+    from atmodeller.cooling import InteriorCooling
+
+    model = SubregularSolution.hydrogen_silicate_gilmore26()
+    interior = InteriorCooling.from_species(mixture(), model, P, mass_fraction=0.03)
+    path = interior.path(3400.0, 2900.0, steps=2000)
+    t = np.asarray(path.temperature)
+    x = np.asarray(path.composition)
+    h = np.asarray(model.partial_enthalpies(t, P, x)[..., 1])
+    m_si, m_h = (float(v) for v in interior.parcel.molar_masses)
+    # Moles of H2 per kg of system: silicate fixed, dissolved H2 follows x.
+    silicate_moles = (1 - 0.03) / m_si
+    dissolved = silicate_moles * x / (1 - x)
+    expected = np.concatenate(([0.0], np.cumsum(-np.diff(dissolved) * (h[1:] + h[:-1]) / 2)))
+    np.testing.assert_allclose(path.exsolution_heat, expected, rtol=1e-4, atol=1.0)
+    exsolved = (dissolved[0] - dissolved) * m_h
+    np.testing.assert_allclose(path.exsolved_hydrogen, exsolved, rtol=1e-12, atol=1e-15)
+
+
+def test_adiabat_temperature_factor():
+    from atmodeller.cooling import adiabat_temperature_factor
+
+    assert float(adiabat_temperature_factor(1e4, 1e4, 3e-6)) == pytest.approx(1.0)
+    # Mass uniform in pressure: mean of exp(g dP) over the column.
+    gradient, top, bottom = 3e-6, 2e4, 1.2e5
+    expected = (np.exp(gradient * (bottom - top)) - 1) / (gradient * (bottom - top))
+    assert float(adiabat_temperature_factor(top, bottom, gradient)) == pytest.approx(expected)
+
+
+def test_onset_is_nan_for_a_missing_gradient_coefficient(parcel):
+    model, x = parcel.mixing_model, parcel.composition
+    for kappa in (model.gradient_coefficient(6000.0, P, 0.3e-9), -1e-16):
+        assert np.isnan(nucleation_onset_temperature(model, P, x, kappa, 1.819e-5, 123.19))
+
+
+@pytest.mark.parametrize("mass_fraction,width", [(0.03, 0.06e-9), (0.006, 0.3e-9)])
+def test_onset_meets_its_criterion_or_is_nan(mass_fraction, width):
+    model = SubregularSolution.hydrogen_silicate_gilmore26()
+    sample = ParcelCooling.from_species(mixture(), model, P, mass_fraction=mass_fraction)
+    x = sample.composition
+    kappa = model.gradient_coefficient(3000.0, P, width)
+    onsets = []
+    for criterion in (80.0, 160.0):
+        onset = nucleation_onset_temperature(model, P, x, kappa, 1.819e-5, criterion)
+        onsets.append(float(onset))
+        if np.isfinite(onset):
+            b = model.nucleation_barrier(onset, P, x, kappa, 1.819e-5)
+            assert float(b.energy_over_kT) == pytest.approx(criterion, rel=1e-6)
+    # A larger criterion allows a larger barrier, so nucleation starts earlier.
+    if all(np.isfinite(onsets)):
+        assert onsets[1] > onsets[0]
+    # The 0.6 wt% parcel has no spinodal; the scan still brackets its onset.
+    if mass_fraction == 0.006:
+        assert all(np.isfinite(onsets))
+
+
+def test_path_is_invalid_when_the_parcel_meets_a_gap_without_a_binodal():
+    model = SubregularSolution(-50000.0, -50000.0, temperature_scale=1000.0)
+    thermo = (mixture()[0].thermo, mixture()[1].thermo)
+    sample = ParcelCooling(model, thermo, jnp.array([0.1003887, 0.00201588]), 1.0, 0.5)
+    assert np.isnan(model.binodal_temperature(1.0, 0.5))
+    assert not bool(sample.path(3000.0, 2000.0, steps=10).valid)
+
+
+def test_paths_reject_batched_parcels():
+    model = SubregularSolution.hydrogen_silicate_gilmore26()
+    batch = ParcelCooling.from_species(mixture(), model, P, mass_fraction=jnp.array([0.01, 0.03]))
+    with pytest.raises(ValueError, match="vmap"):
+        batch.path(3600.0, 2600.0, steps=10)
+
+
+def test_interior_richer_than_the_critical_composition_is_invalid():
+    from atmodeller.cooling import InteriorCooling
+
+    model = SubregularSolution.hydrogen_silicate_gilmore26()
+    interior = InteriorCooling.from_species(mixture(), model, P, mass_fraction=0.20)
+    assert not bool(interior.path(3600.0, 2800.0, steps=50).valid)
+
+
+def test_interior_started_inside_the_gap_counts_the_immediate_exsolution():
+    from atmodeller.cooling import InteriorCooling
+
+    model = SubregularSolution.hydrogen_silicate_gilmore26()
+    interior = InteriorCooling.from_species(mixture(), model, P, mass_fraction=0.03)
+    onset = float(model.binodal_temperature(P, interior.initial_composition))
+    inside = interior.path(onset - 50, 2800.0, steps=50)
+    outside = interior.path(onset + 50, 2800.0, steps=50)
+    assert float(inside.exsolution_heat[0]) > 0 and float(inside.exsolved_hydrogen[0]) > 0
+    # The mixing enthalpy does not depend on temperature, so both reach the same heat.
+    np.testing.assert_allclose(inside.exsolution_heat[-1], outside.exsolution_heat[-1], rtol=1e-9)
+    np.testing.assert_allclose(
+        inside.exsolved_hydrogen[-1], outside.exsolved_hydrogen[-1], rtol=1e-12
     )

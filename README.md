@@ -17,7 +17,8 @@
 
 This branch adds binary mixing free energies, spinodal/binodal calculations, and
 equilibrium demixing through Atmodeller's native phase and activity interfaces.
-It includes a published H2–MgSiO3 mixing parameterization and a reproducible
+It includes the historical 2025 and final 2026 H2–MgSiO3 mixing parameterizations,
+an extensive-energy-preserving composition-basis conversion, and a reproducible
 gas–solution integration example. Time-dependent decomposition, collective
 solution-phase disappearance, and calibrated multicomponent atmospheric
 predictions remain future work.
@@ -28,7 +29,9 @@ Phase-resolved outputs expose conserved component inventories and mass.
 
 Start with the [spinodal guide](docs/spinodal.rst),
 [runnable example](examples/spinodal_equilibrium.py),
-[new demixing and atmospheric-feed study](research/spinodal_study/README.md), and
+[focused delayed-exsolution study](research/spinodal_onset/README.md) and its
+[research draft](research/spinodal_onset/paper/main.pdf),
+[earlier demixing and atmospheric-feed study](research/spinodal_study/README.md), and
 [archived hydrogen-storage investigation](research/README.rst).
 The archived sensitivity results predate this extension and retain their original provenance.
 

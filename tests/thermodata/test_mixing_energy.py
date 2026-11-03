@@ -238,9 +238,7 @@ def test_diagnostics_report_both_states_and_the_separation_heat():
     np.testing.assert_allclose(
         d["equilibrium_mixing_enthalpy_J_per_mol"], model.equilibrium_enthalpy(t, p, x)
     )
-    np.testing.assert_allclose(
-        d["homogeneous_mixing_entropy_J_per_mol_K"], model.entropy(t, p, x)
-    )
+    np.testing.assert_allclose(d["homogeneous_mixing_entropy_J_per_mol_K"], model.entropy(t, p, x))
     np.testing.assert_allclose(
         d["equilibrium_mixing_entropy_J_per_mol_K"], model.equilibrium_entropy(t, p, x)
     )
@@ -249,3 +247,46 @@ def test_diagnostics_report_both_states_and_the_separation_heat():
         d["equilibrium_mixing_volume_m3_per_mol"], model.equilibrium_volume(t, p, x)
     )
     np.testing.assert_allclose(d["demixing_heat_J_per_mol"], model.demixing_heat(t, p, x))
+
+
+def test_binodal_temperature_matches_the_published_onset_and_an_independent_root():
+    from scipy.optimize import brentq
+
+    model = SubregularSolution.hydrogen_silicate_gilmore26()
+    x = native_x(0.03)
+    t = float(model.binodal_temperature(20000.0, x))
+    # The study's 3 wt%, 2 GPa binodal onset.
+    assert t == pytest.approx(3355.9, abs=0.05)
+    z = x / (2 - x)
+    expected = brentq(lambda v: published_binodal(v, 20000.0)[0] - z, 3000.0, 3480.0, xtol=1e-10)
+    assert t == pytest.approx(expected, rel=1e-9)
+    assert not model.coexistence(t + 1e-3, 20000.0).contains(x)
+    assert model.coexistence(t - 1e-3, 20000.0).contains(x)
+
+
+def test_binodal_temperature_batches_and_flags_missing_onsets():
+    model = SubregularSolution.hydrogen_silicate_gilmore26()
+    x = jnp.array([native_x(0.01), native_x(0.03), 0.0, 1.0])
+    t = eqx.filter_jit(model.binodal_temperature)(
+        jnp.array([20000.0, 50000.0, 20000.0, 20000.0]), x
+    )
+    assert bool(jnp.all(jnp.isfinite(t[:2])))
+    # Pure components never enter the gap.
+    assert bool(jnp.all(jnp.isnan(t[2:])))
+    assert np.isnan(model.binodal_temperature(-1.0, 0.3))
+
+
+def test_binodal_temperature_matches_the_regular_solution_and_infinite_scales():
+    w = 3 * R * 2000
+    model = SubregularSolution.regular_solution(w)
+    for x in (0.1, 0.3):
+        expected = w * (1 - 2 * x) / (R * np.log((1 - x) / x))
+        assert float(model.binodal_temperature(1.0, x)) == pytest.approx(expected, rel=1e-9)
+    # Close to the critical composition the onset approaches Tc = W / 2R.
+    assert float(model.binodal_temperature(1.0, 0.4999)) == pytest.approx(w / (2 * R), rel=1e-6)
+
+
+def test_binodal_temperature_is_nan_when_the_gap_persists_above_the_range():
+    # Negative interactions and a negative factor above tau give a gap at all high T.
+    model = SubregularSolution(-50000.0, -50000.0, temperature_scale=1000.0)
+    assert np.isnan(model.binodal_temperature(1.0, 0.5))

@@ -213,7 +213,9 @@ class NucleationBarrier(eqx.Module):
     ``energy`` is the square-gradient (Cahn-Hilliard) saddle; ``classical_energy``
     is classical nucleation theory with the same planar tension. Both are
     infinite for a stable parent outside the gap and zero inside the spinodal.
-    NaN marks an invalid input or a failed nucleus solution.
+    NaN marks an invalid input (including a nonpositive gradient coefficient
+    or volume) or, for ``energy`` only, a failed nucleus solution. ``valid``
+    refers to ``energy``; the classical value is usable wherever it is finite.
     """
 
     energy: FloatArray
@@ -397,28 +399,40 @@ class SubregularSolution(eqx.Module):
         )
         return jnp.where(valid, temperature, jnp.nan)
 
-    def binodal_temperature(self, pressure: ArrayLike, x: ArrayLike) -> FloatArray:
+    def binodal_temperature(
+        self,
+        pressure: ArrayLike,
+        x: ArrayLike,
+        *,
+        lowest: float = 100.0,
+        highest: float = 1e5,
+    ) -> FloatArray:
         """Highest temperature at which composition x lies inside the coexistence gap.
 
-        The equilibrium separation onset of a cooling parcel. It assumes the gap
-        widens monotonically on cooling, which holds while the interaction
-        factor 1 - T/C + P/D decreases with temperature. The search spans a
-        quarter of the no-gap bound up to that bound. NaN means no onset in
-        that range, an invalid tangent, or invalid P/x.
+        The equilibrium separation onset of a cooling parcel. A scan of 96
+        log-spaced temperatures between ``lowest`` and ``highest`` (K) finds the
+        highest one inside the gap whose neighbour above is outside it, and
+        bisection refines that bracket. A gap that closes and reopens within one
+        grid step (7.5 %) is missed. NaN means no onset in range, a gap that
+        persists at ``highest``, an invalid tangent, or invalid P/x.
         """
         p, x = jnp.broadcast_arrays(as_j64(pressure), as_j64(x))
-        scale = jnp.maximum(1 + p / self.pressure_scale, 0.0)
-        # Above this temperature |a|, |b| <= 1/2 or the factor is negative: no gap.
-        largest = jnp.maximum(jnp.abs(self.interaction_0), jnp.abs(self.interaction_1))
-        upper = jnp.minimum(2 * largest * scale / GAS_CONSTANT, self.temperature_scale * scale)
-        lower = upper / 4
+        grid = jnp.geomspace(lowest, highest, 96)
+        c = self.coexistence(grid, p[..., None])
+        inside = c.contains(x[..., None])
+        crossing = inside[..., :-1] & c.valid[..., 1:] & ~inside[..., 1:]
+        # Index of the highest crossing, counted from the low end.
+        index = crossing.shape[-1] - 1 - jnp.argmax(crossing[..., ::-1], axis=-1)
+        grid = jnp.broadcast_to(grid, inside.shape)
+        lower = jnp.take_along_axis(grid, index[..., None], axis=-1)[..., 0]
+        upper = jnp.take_along_axis(grid, index[..., None] + 1, axis=-1)[..., 0]
 
-        def inside(t):
+        def contains(t):
             return self.coexistence(t, p).contains(x)
 
-        temperature = _bisect(lambda t: jnp.where(inside(t), -1.0, 1.0), lower, upper)
-        valid = inside(lower) & ~inside(upper) & self.coexistence(temperature, p).valid
-        valid &= jnp.isfinite(p) & (p >= 0) & (upper > 0)
+        temperature = _bisect(lambda t: jnp.where(contains(t), -1.0, 1.0), lower, upper)
+        valid = jnp.any(crossing, axis=-1) & ~inside[..., -1]
+        valid &= self.coexistence(temperature, p).valid & jnp.isfinite(p) & (p >= 0)
         return jnp.where(valid, temperature, jnp.nan)
 
     def log_activity_coefficients(
@@ -735,19 +749,24 @@ class SubregularSolution(eqx.Module):
         s, _ = _nucleation.planar_interface(a, b, c.logits[..., 0] - k, c.logits[..., 1] - k)
         classical = 4 * jnp.pi * (32 / 3) * s**3 / drive**2
         rt = GAS_CONSTANT * t
-        scale = rt / as_j64(molar_volume) * (as_j64(gradient_coefficient) / rt) ** 1.5
-        valid = c.valid & (x >= 0) & (x <= 1) & (~metastable | solved)
+        kappa, volume = as_j64(gradient_coefficient), as_j64(molar_volume)
+        scale = rt / volume * (kappa / rt) ** 1.5
+        inputs = c.valid & (x >= 0) & (x <= 1) & (kappa > 0) & (volume > 0)
+        inputs &= jnp.isfinite(kappa) & jnp.isfinite(volume)
+        valid = inputs & (~metastable | solved)
+        # Classical theory needs only the driving force and the planar tension.
+        classical_valid = inputs & (~metastable | (jnp.isfinite(drive) & (drive > 0)))
 
-        def assemble(values, metastable_value):
+        def assemble(values, metastable_value, ok):
             values = jnp.where(metastable, metastable_value, values)
-            return jnp.where(valid, values, jnp.nan).reshape(shape)
+            return jnp.where(ok, values, jnp.nan).reshape(shape)
 
         stable_or_unstable = jnp.where(unstable, 0.0, jnp.inf)
-        energy = assemble(stable_or_unstable, scale * energy)
+        energy = assemble(stable_or_unstable, scale * energy, valid)
         return NucleationBarrier(
             energy=energy,
-            classical_energy=assemble(stable_or_unstable, scale * classical),
-            nucleus_composition=assemble(jnp.nan * t, self.native_composition(centre)),
+            classical_energy=assemble(stable_or_unstable, scale * classical, classical_valid),
+            nucleus_composition=assemble(jnp.nan * t, self.native_composition(centre), valid),
             energy_over_kT=energy * AVOGADRO / (GAS_CONSTANT * t.reshape(shape)),
             valid=valid.reshape(shape),
         )

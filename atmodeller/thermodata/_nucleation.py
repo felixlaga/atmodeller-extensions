@@ -28,7 +28,8 @@ from atmodeller.jax_utils import FloatArray
 _GAUSS_NODES, _GAUSS_WEIGHTS = (jnp.asarray(v) for v in np.polynomial.legendre.leggauss(160))
 _LOG_DEPTH = 700.0
 """Largest log distance of the nucleus centre from the nucleus composition"""
-_STEPS = 12000
+_MAX_STEPS = 200000
+"""Step cap per trajectory; reaching it marks the nucleus unresolved"""
 _STEP = 0.01
 """RK4 step in units of the local curvature length"""
 _BISECTIONS = 60
@@ -173,6 +174,7 @@ def critical_nucleus(a: FloatArray, b: FloatArray, z0: FloatArray, q_spinodal) -
         return (slope(a, b, z) - tangent) / 2
 
     m = jnp.sqrt(curvature(a, b, zn) / 2)
+    m_parent = jnp.sqrt(jnp.maximum(curvature(a, b, z0), 0.0) / 2)
     linear_limit = 1e-6 * span
 
     def trajectory(depth):
@@ -203,10 +205,18 @@ def critical_nucleus(a: FloatArray, b: FloatArray, z0: FloatArray, q_spinodal) -
         def rhs(r, z, v):
             return v, force(z) - 2 * v / r
 
-        def step(carry, _):
-            r, z, v, grad, pot, over, under = carry
-            done = over | under
-            scale = jnp.sqrt(jnp.abs(curvature(a, b, z)) / 2 + m**2 * 1e-4)
+        # Step lengths follow the local curvature, floored by the parent's, so a
+        # nearly pure nucleus phase (huge m) cannot exhaust the integration.
+        floor = (0.1 * m_parent) ** 2 + (1e-6 * m) ** 2
+        r_stop = r0 + 60 / jnp.maximum(m_parent, 1e-3 * m)
+
+        def running(carry):
+            n, r, _, _, _, _, over, under = carry
+            return ~(over | under) & (r < r_stop) & (n < _MAX_STEPS)
+
+        def step(carry):
+            n, r, z, v, grad, pot, over, under = carry
+            scale = jnp.sqrt(jnp.abs(curvature(a, b, z)) / 2 + floor)
             h = jnp.minimum(_STEP / scale, 0.25 * r + _STEP / m)
             k1 = rhs(r, z, v)
             k2 = rhs(r + h / 2, z + h / 2 * k1[0], v + h / 2 * k1[1])
@@ -217,35 +227,37 @@ def critical_nucleus(a: FloatArray, b: FloatArray, z0: FloatArray, q_spinodal) -
             r_mid = r + h / 2
             z_mid = (z + z_new) / 2
             v_mid = (v + v_new) / 2
-            grad_new = grad + h * r_mid**2 * v_mid**2
-            pot_new = pot + h * r_mid**2 * relative(z_mid)
             crossed = toward * (z_new - z0) > 0
             turned = toward * v_new < 0
-            new = (
+            return (
+                n + 1,
                 r + h,
                 z_new,
                 v_new,
-                jnp.where(done, grad, grad_new),
-                jnp.where(done, pot, pot_new),
-                over | (~done & crossed),
-                under | (~done & ~crossed & turned),
+                grad + h * r_mid**2 * v_mid**2,
+                pot + h * r_mid**2 * relative(z_mid),
+                crossed,
+                ~crossed & turned,
             )
-            keep = jax.tree_util.tree_map(lambda old, n: jnp.where(done, old, n), carry, new)
-            return keep, None
 
-        start = (r0, z_start, v_start, 0.0 * r0, interior, r0 < 0, r0 < 0)
-        (_, _, _, grad, pot, over, under), _ = jax.lax.scan(step, start, None, length=_STEPS)
-        return over, under, grad, pot, centre
+        zero = 0.0 * r0
+        start = (0, r0, z_start, v_start, zero, interior, r0 < 0, r0 < 0)
+        n, _, _, _, grad, pot, over, under = jax.lax.while_loop(running, step, start)
+        # Stopping at r_stop without an event means the profile has settled on the
+        # parent within exp(-60); hitting the step cap means it is unresolved.
+        resolved = n < _MAX_STEPS
+        return over, under, grad, pot, centre, resolved
 
     def overshoots(depth):
-        over, _, _, _, _ = trajectory(depth)
+        over = trajectory(depth)[0]
         return jnp.where(over, 1.0, -1.0)
 
     lowest, highest = jnp.zeros_like(z0), jnp.full_like(z0, _LOG_DEPTH)
     bracketed = (overshoots(lowest) < 0) & (overshoots(highest) > 0)
     depth = _bisect(overshoots, lowest, highest, _BISECTIONS)
-    _, _, grad, pot, centre = trajectory(depth)
+    _, _, grad, pot, centre, resolved = trajectory(depth)
     barrier = 4 * jnp.pi * (2 / 3) * grad
     direct = 4 * jnp.pi * (grad + pot)
     consistent = jnp.abs(direct / barrier - 1) < 0.02
-    return barrier, centre, -dg_nucleus, bracketed & consistent & (barrier > 0)
+    valid = bracketed & consistent & resolved & (barrier > 0)
+    return barrier, centre, -dg_nucleus, valid

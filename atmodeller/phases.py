@@ -1054,7 +1054,7 @@ class BinarySolutionPhase(CondensedPhase):
         """
         log_x = self.get_log_mole_fraction(log_number_moles)
         x = jnp.exp(log_x[..., 1])
-        homogeneous = log_x + self.mixing_model.log_activity_coefficients(temperature, pressure, x)
+        homogeneous = self.mixing_model.homogeneous_log_activities(temperature, pressure, log_x)
         if not self.equilibrate:
             return homogeneous
         coexistence = self.mixing_model.coexistence(temperature, pressure)
