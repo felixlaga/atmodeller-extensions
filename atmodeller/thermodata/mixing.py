@@ -4,10 +4,12 @@
 
 All energies are per mole of *components*, temperatures are K, pressures are bar,
 and ``x`` is the mole fraction of component 1 in the ordered pair (0, 1).
-These are local equilibrium calculations, not a model of decomposition kinetics.
+Energies of mixing and separation come from the same free energy. Nucleation
+barriers are thermodynamic: they include no rate prefactor, transport or growth.
 """
 
 from collections.abc import Callable
+import math
 from typing import Self
 
 import equinox as eqx
@@ -18,21 +20,22 @@ from jaxtyping import Array, ArrayLike, Bool
 
 from atmodeller.jax_utils import FloatArray, as_j64
 from atmodeller.sci_utils import GAS_CONSTANT
+from atmodeller.thermodata import _nucleation
+from atmodeller.thermodata._nucleation import _bisect
+
+AVOGADRO = 6.02214076e23
+"""Avogadro constant (1/mol)"""
 
 
-def _bisect(
-    function: Callable[[FloatArray], FloatArray], lower: FloatArray, upper: FloatArray
-) -> FloatArray:
-    """Bisect an increasing, bracketed scalar function, with broadcasting."""
+def _derivative(function: Callable[[FloatArray], FloatArray], value: ArrayLike) -> FloatArray:
+    """Elementwise forward derivative that keeps NaN where the function is NaN.
 
-    def step(_, bounds):
-        lo, hi = bounds
-        mid = lo + (hi - lo) / 2
-        negative = function(mid) < 0
-        return jnp.where(negative, mid, lo), jnp.where(negative, hi, mid)
-
-    lo, hi = jax.lax.fori_loop(0, 64, step, (lower, upper))
-    return lo + (hi - lo) / 2
+    The derivative of a NaN branch of ``jnp.where`` is zero, so an invalid
+    input would otherwise give a finite derivative.
+    """
+    value = as_j64(value)
+    primal, tangent = jax.jvp(function, (value,), (jnp.ones_like(value),))
+    return jnp.where(jnp.isnan(primal), jnp.nan, tangent)
 
 
 def _curvature(a: FloatArray, b: FloatArray, x: FloatArray) -> FloatArray:
@@ -204,6 +207,26 @@ class BinaryCoexistence(eqx.Module):
         return jnp.where(self.valid & (x >= 0) & (x <= 1), fraction, jnp.nan)
 
 
+class NucleationBarrier(eqx.Module):
+    """Critical-nucleus energy of a homogeneous parent composition.
+
+    ``energy`` is the square-gradient (Cahn-Hilliard) saddle; ``classical_energy``
+    is classical nucleation theory with the same planar tension. Both are
+    infinite for a stable parent outside the gap and zero inside the spinodal.
+    NaN marks an invalid input or a failed nucleus solution.
+    """
+
+    energy: FloatArray
+    """Square-gradient nucleation barrier (J)"""
+    classical_energy: FloatArray
+    """Classical barrier 16 pi sigma³ / (3 dg_v²) with the planar tension (J)"""
+    nucleus_composition: FloatArray
+    """Native component-1 mole fraction at the nucleus centre (NaN if no nucleus)"""
+    energy_over_kT: FloatArray
+    """``energy`` over Boltzmann's constant times temperature"""
+    valid: Bool[Array, "..."]
+
+
 class SubregularSolution(eqx.Module):
     r"""A thermodynamically consistent binary subregular solution.
 
@@ -221,6 +244,10 @@ class SubregularSolution(eqx.Module):
         interaction_1: B (J/mol of components).
         temperature_scale: C (K); infinity disables temperature scaling.
         pressure_scale: D (bar); infinity disables pressure scaling. May be negative.
+        component_0_multiplicity: Number of fit-basis units in one native
+            component-0 formula unit; component 1 contributes one. With k != 1,
+            the equation above is evaluated at z=x/[k+(1-k)x] and multiplied by
+            k+(1-k)x, preserving the extensive free energy. Defaults to one.
 
     Inputs broadcast elementwise. Invalid T <= 0, P < 0, nonfinite T/P or x
     outside [0,1] produce NaN. No extrapolation validity is implied by a finite
@@ -231,6 +258,8 @@ class SubregularSolution(eqx.Module):
     interaction_1: FloatArray
     temperature_scale: FloatArray
     pressure_scale: FloatArray
+    component_0_multiplicity: float = eqx.field(static=True)
+    """Mixing-basis units per native component-0 formula unit (component 1: one)."""
 
     def __init__(
         self,
@@ -239,11 +268,15 @@ class SubregularSolution(eqx.Module):
         *,
         temperature_scale: ArrayLike = jnp.inf,
         pressure_scale: ArrayLike = jnp.inf,
+        component_0_multiplicity: float = 1.0,
     ):
+        if not math.isfinite(component_0_multiplicity) or component_0_multiplicity <= 0:
+            raise ValueError("Component multiplicity must be finite and positive.")
         self.interaction_0 = as_j64(interaction_0)
         self.interaction_1 = as_j64(interaction_1)
         self.temperature_scale = as_j64(temperature_scale)
         self.pressure_scale = as_j64(pressure_scale)
+        self.component_0_multiplicity = float(component_0_multiplicity)
 
     @classmethod
     def regular_solution(cls, interaction: ArrayLike) -> Self:
@@ -261,6 +294,38 @@ class SubregularSolution(eqx.Module):
         """
         return cls(-6.26e3, 7.86e5, temperature_scale=4.67e3, pressure_scale=-3.5e5)
 
+    @classmethod
+    def hydrogen_silicate_gilmore26(cls) -> Self:
+        """Final Gilmore & Stixrude (2026) fit, on native (MgSiO3, H2) components.
+
+        DOI: 10.1038/s41586-025-09970-4, equations 1 and 8. The paper uses
+        z = n(H2)/(n(H2) + n(MgO) + n(SiO2)), so one MgSiO3 formula unit
+        contributes TWO mixing-basis units. This conversion applies to the
+        extensive Gibbs energy and both chemical potentials, not only to z.
+        All public compositions, phase amounts and energies remain on the
+        native formula-unit basis. This does not calibrate pure standard states
+        for exchange with a separate reacting gas reservoir.
+        """
+        return cls(
+            75e3,
+            424e3,
+            temperature_scale=4400.0,
+            pressure_scale=-3.5e5,
+            component_0_multiplicity=2.0,
+        )
+
+    def mixing_composition(self, x: ArrayLike) -> FloatArray:
+        """Convert native component-1 mole fraction to the free-energy fit basis."""
+        x = as_j64(x)
+        k = self.component_0_multiplicity
+        return jnp.where((x >= 0) & (x <= 1), x / (k + (1 - k) * x), jnp.nan)
+
+    def native_composition(self, x: ArrayLike) -> FloatArray:
+        """Convert component-1 mole fraction in the fit basis to the native basis."""
+        x = as_j64(x)
+        k = self.component_0_multiplicity
+        return jnp.where((x >= 0) & (x <= 1), k * x / (1 + (k - 1) * x), jnp.nan)
+
     def _parameters(
         self, temperature: ArrayLike, pressure: ArrayLike
     ) -> tuple[FloatArray, FloatArray]:
@@ -276,14 +341,24 @@ class SubregularSolution(eqx.Module):
         """Homogeneous molar Gibbs energy of mixing (J/mol); finite at x=0 and 1."""
         a, b = self._parameters(temperature, pressure)
         x = as_j64(x)
-        f = xlogy(x, x) + xlogy(1 - x, 1 - x) + x * (1 - x) * (a * (1 - x) + b * x)
-        return jnp.where((x >= 0) & (x <= 1), GAS_CONSTANT * temperature * f, jnp.nan)
+        z = self.mixing_composition(x)
+        scale = self.component_0_multiplicity + (1 - self.component_0_multiplicity) * x
+        f = xlogy(z, z) + xlogy(1 - z, 1 - z) + z * (1 - z) * (a * (1 - z) + b * z)
+        return jnp.where((x >= 0) & (x <= 1), scale * GAS_CONSTANT * temperature * f, jnp.nan)
 
     def curvature(self, temperature: ArrayLike, pressure: ArrayLike, x: ArrayLike) -> FloatArray:
         """Homogeneous d²g_mix/dx² (J/mol); negative means spinodal instability."""
         a, b = self._parameters(temperature, pressure)
         x = as_j64(x)
-        value = GAS_CONSTANT * temperature * _curvature(a, b, x)
+        k = self.component_0_multiplicity
+        scale = k + (1 - k) * x
+        value = (
+            GAS_CONSTANT
+            * temperature
+            * k**2
+            / scale**3
+            * _curvature(a, b, self.mixing_composition(x))
+        )
         return jnp.where((x >= 0) & (x <= 1), value, jnp.nan)
 
     def spinodal(self, temperature: ArrayLike, pressure: ArrayLike) -> FloatArray:
@@ -294,7 +369,57 @@ class SubregularSolution(eqx.Module):
         """
         a, b = self._parameters(temperature, pressure)
         lower, upper, gap = _spinodal(a, b)
-        return jnp.where(gap[..., None], jnp.stack((lower, upper), axis=-1), jnp.nan)
+        limits = self.native_composition(jnp.stack((lower, upper), axis=-1))
+        return jnp.where(gap[..., None], limits, jnp.nan)
+
+    def spinodal_temperature(self, pressure: ArrayLike, x: ArrayLike) -> FloatArray:
+        """Positive temperature at which the homogeneous curvature vanishes.
+
+        Analytical inversion of this model's T-linear Gibbs energy. NaN means
+        no finite positive root, invalid P/x, or a composition endpoint. This
+        locates a local-stability boundary; it predicts neither a nucleation
+        temperature nor a decomposition rate. A positive temperature derivative
+        of curvature is additionally needed to interpret it as a cooling onset.
+        """
+        p, z = as_j64(pressure), self.mixing_composition(x)
+        a, b = self.interaction_0, self.interaction_1
+        second = 2 * b - 4 * a + 6 * (a - b) * z
+        denominator = GAS_CONSTANT / (z * (1 - z)) - second / self.temperature_scale
+        temperature = -second * (1 + p / self.pressure_scale) / denominator
+        valid = (
+            jnp.isfinite(p)
+            & (p >= 0)
+            & (z > 0)
+            & (z < 1)
+            & jnp.isfinite(temperature)
+            & (temperature > 0)
+            & (denominator != 0)
+        )
+        return jnp.where(valid, temperature, jnp.nan)
+
+    def binodal_temperature(self, pressure: ArrayLike, x: ArrayLike) -> FloatArray:
+        """Highest temperature at which composition x lies inside the coexistence gap.
+
+        The equilibrium separation onset of a cooling parcel. It assumes the gap
+        widens monotonically on cooling, which holds while the interaction
+        factor 1 - T/C + P/D decreases with temperature. The search spans a
+        quarter of the no-gap bound up to that bound. NaN means no onset in
+        that range, an invalid tangent, or invalid P/x.
+        """
+        p, x = jnp.broadcast_arrays(as_j64(pressure), as_j64(x))
+        scale = jnp.maximum(1 + p / self.pressure_scale, 0.0)
+        # Above this temperature |a|, |b| <= 1/2 or the factor is negative: no gap.
+        largest = jnp.maximum(jnp.abs(self.interaction_0), jnp.abs(self.interaction_1))
+        upper = jnp.minimum(2 * largest * scale / GAS_CONSTANT, self.temperature_scale * scale)
+        lower = upper / 4
+
+        def inside(t):
+            return self.coexistence(t, p).contains(x)
+
+        temperature = _bisect(lambda t: jnp.where(inside(t), -1.0, 1.0), lower, upper)
+        valid = inside(lower) & ~inside(upper) & self.coexistence(temperature, p).valid
+        valid &= jnp.isfinite(p) & (p >= 0) & (upper > 0)
+        return jnp.where(valid, temperature, jnp.nan)
 
     def log_activity_coefficients(
         self, temperature: ArrayLike, pressure: ArrayLike, x: ArrayLike
@@ -302,7 +427,17 @@ class SubregularSolution(eqx.Module):
         """Homogeneous ln(gamma_0, gamma_1), derived from the same Gibbs energy."""
         a, b = self._parameters(temperature, pressure)
         x = as_j64(x)
-        coefficients = _excess_potentials(a, b, x)
+        z = self.mixing_composition(x)
+        coefficients = _excess_potentials(a, b, z)
+        k = self.component_0_multiplicity
+        if k != 1:
+            # Derivatives of G = (k*n0+n1)*g(z), relative to native ideal
+            # activities. Transforming only the binodal composition is wrong.
+            log_scale = jnp.log(k + (1 - k) * x)
+            mu0 = k * coefficients[..., 0] + (k - 1) * jnp.log1p(-x)
+            mu0 += k * (jnp.log(k) - log_scale)
+            mu1 = coefficients[..., 1] - log_scale
+            coefficients = jnp.stack((mu0, mu1), axis=-1)
         return jnp.where(((x >= 0) & (x <= 1))[..., None], coefficients, jnp.nan)
 
     def coexistence(self, temperature: ArrayLike, pressure: ArrayLike) -> BinaryCoexistence:
@@ -319,6 +454,8 @@ class SubregularSolution(eqx.Module):
         sl, sr, gap = _spinodal(a, b)
         left = _potentials_from_logit(a, b, q[..., 0])
         right = _potentials_from_logit(a, b, q[..., 1])
+        multiplicity = jnp.array([self.component_0_multiplicity, 1.0])
+        left, right = left * multiplicity, right * multiplicity
         residual = jnp.where(gap, jnp.max(jnp.abs(left - right), axis=-1), 0.0)
         brackets = (jax.nn.sigmoid(q[..., 0]) < sl) & (jax.nn.sigmoid(q[..., 1]) > sr)
         resolved = (residual < 1e-8) & brackets & jnp.all(jnp.abs(q) < 699.0, axis=-1)
@@ -330,7 +467,23 @@ class SubregularSolution(eqx.Module):
         )
         valid = jnp.isfinite(a) & jnp.isfinite(b) & edges_resolved & (~gap | resolved)
         activity = jnp.where((gap & valid)[..., None], (left + right) / 2, jnp.nan)
-        return BinaryCoexistence(q, gap, valid, activity, residual)
+        native_q = jnp.where(gap[..., None], q + jnp.log(self.component_0_multiplicity), 0.0)
+        return BinaryCoexistence(native_q, gap, valid, activity, residual)
+
+    def homogeneous_log_activities(
+        self, temperature: ArrayLike, pressure: ArrayLike, log_mole_fraction: ArrayLike
+    ) -> FloatArray:
+        """Homogeneous activities from native log fractions, preserving trace limits.
+
+        Used by the reaction engine: rounding exp(log_x1) to one must not erase
+        a finite log_x0. Both ideal and nonideal terms use the same component basis.
+        """
+        log_x = as_j64(log_mole_fraction)
+        k = self.component_0_multiplicity
+        log_scale = jnp.logaddexp(jnp.log(k) + log_x[..., 0], log_x[..., 1])
+        log_z = log_x + jnp.array([jnp.log(k), 0.0]) - log_scale[..., None]
+        a, b = self._parameters(temperature, pressure)
+        return (log_z + _excess_potentials(a, b, jnp.exp(log_z[..., 1]))) * jnp.array([k, 1.0])
 
     def log_activities(
         self,
@@ -348,7 +501,8 @@ class SubregularSolution(eqx.Module):
         """
         x = as_j64(x)
         ideal = jnp.stack((jnp.log1p(-x), jnp.log(x)), axis=-1)
-        homogeneous = ideal + self.log_activity_coefficients(temperature, pressure, x)
+        homogeneous = self.homogeneous_log_activities(temperature, pressure, ideal)
+        homogeneous = jnp.where(((x >= 0) & (x <= 1))[..., None], homogeneous, jnp.nan)
         if not equilibrate:
             return homogeneous
         coexistence = self.coexistence(temperature, pressure)
@@ -356,6 +510,247 @@ class SubregularSolution(eqx.Module):
             coexistence.contains(x)[..., None], coexistence.log_activity, homogeneous
         )
         return jnp.where(coexistence.valid[..., None], values, jnp.nan)
+
+    def equilibrium_gibbs_energy(
+        self, temperature: ArrayLike, pressure: ArrayLike, x: ArrayLike
+    ) -> FloatArray:
+        """Convex-envelope mixing energy (J/native mol), including pure endpoints."""
+        x = as_j64(x)
+        c = self.coexistence(temperature, pressure)
+        activity = jnp.where((c.has_gap & c.valid)[..., None], c.log_activity, 0.0)
+        tangent = GAS_CONSTANT * temperature * ((1 - x) * activity[..., 0] + x * activity[..., 1])
+        result = jnp.where(c.contains(x), tangent, self.gibbs_energy(temperature, pressure, x))
+        return jnp.where(c.valid, result, jnp.nan)
+
+    def entropy(self, temperature: ArrayLike, pressure: ArrayLike, x: ArrayLike) -> FloatArray:
+        """Homogeneous molar entropy of mixing, -dg_mix/dT (J/K/native mol)."""
+        return -_derivative(lambda v: self.gibbs_energy(v, pressure, x), temperature)
+
+    def enthalpy(self, temperature: ArrayLike, pressure: ArrayLike, x: ArrayLike) -> FloatArray:
+        """Homogeneous molar enthalpy of mixing, g + Ts (J/native mol).
+
+        Derived from :meth:`gibbs_energy` by automatic differentiation, so it
+        stays consistent with the binodal and the activities. Positive values
+        mean mixing absorbs heat, so separation releases it.
+        """
+        t = as_j64(temperature)
+        return self.gibbs_energy(t, pressure, x) + t * self.entropy(t, pressure, x)
+
+    def volume(self, temperature: ArrayLike, pressure: ArrayLike, x: ArrayLike) -> FloatArray:
+        """Homogeneous molar volume of mixing, dg_mix/dP (m³/native mol)."""
+        # J/bar to m³: one bar is 1e5 Pa.
+        return _derivative(lambda v: self.gibbs_energy(temperature, v, x), pressure) * 1e-5
+
+    def heat_capacity(
+        self, temperature: ArrayLike, pressure: ArrayLike, x: ArrayLike
+    ) -> FloatArray:
+        """Homogeneous heat capacity of mixing, dh_mix/dT (J/K/native mol).
+
+        Zero for this model, whose excess Gibbs energy is linear in temperature.
+        It excludes the pure-component heat capacities.
+        """
+        return _derivative(lambda v: self.enthalpy(v, pressure, x), temperature)
+
+    def partial_enthalpies(
+        self, temperature: ArrayLike, pressure: ArrayLike, x: ArrayLike
+    ) -> FloatArray:
+        """Homogeneous partial molar enthalpies of mixing, shape (..., 2), J/native mol.
+
+        These are -RT² d(ln gamma_i)/dT, the heat each native component carries
+        when it leaves this composition. Their mole-fraction average is
+        :meth:`enthalpy`.
+        """
+        t = as_j64(temperature)
+        dlng_dt = _derivative(lambda v: self.log_activity_coefficients(v, pressure, x), t)
+        return -GAS_CONSTANT * t[..., None] ** 2 * dlng_dt
+
+    def _lever_rule(
+        self,
+        prop: Callable[[ArrayLike, ArrayLike, ArrayLike], FloatArray],
+        temperature: ArrayLike,
+        pressure: ArrayLike,
+        x: ArrayLike,
+        coexistence: BinaryCoexistence | None = None,
+    ) -> FloatArray:
+        """Equilibrium value of an extensive property: lever-rule average in the gap."""
+        x = as_j64(x)
+        c = self.coexistence(temperature, pressure) if coexistence is None else coexistence
+        fraction = c.upper_fraction(x)
+        split = (1 - fraction) * prop(temperature, pressure, c.lower)
+        split += fraction * prop(temperature, pressure, c.upper)
+        result = jnp.where(c.contains(x), split, prop(temperature, pressure, x))
+        return jnp.where(c.valid, result, jnp.nan)
+
+    def equilibrium_enthalpy(
+        self, temperature: ArrayLike, pressure: ArrayLike, x: ArrayLike
+    ) -> FloatArray:
+        """Mixing enthalpy after equilibrium demixing (J/native mol); NaN if invalid."""
+        return self._lever_rule(self.enthalpy, temperature, pressure, x)
+
+    def equilibrium_entropy(
+        self, temperature: ArrayLike, pressure: ArrayLike, x: ArrayLike
+    ) -> FloatArray:
+        """Mixing entropy after equilibrium demixing (J/K/native mol); NaN if invalid."""
+        return self._lever_rule(self.entropy, temperature, pressure, x)
+
+    def equilibrium_volume(
+        self, temperature: ArrayLike, pressure: ArrayLike, x: ArrayLike
+    ) -> FloatArray:
+        """Mixing volume after equilibrium demixing (m³/native mol); NaN if invalid."""
+        return self._lever_rule(self.volume, temperature, pressure, x)
+
+    def equilibrium_heat_capacity(
+        self, temperature: ArrayLike, pressure: ArrayLike, x: ArrayLike
+    ) -> FloatArray:
+        """Apparent mixing heat capacity of a closed mixture kept in equilibrium.
+
+        dh/dT at fixed bulk composition (J/K/native mol). Inside the gap it
+        includes the heat released as the coexisting compositions move, so it
+        acts as a latent heat spread over the cooling range. Outside the gap it
+        equals :meth:`heat_capacity`. It is singular at a critical point.
+        """
+        return _derivative(lambda v: self.equilibrium_enthalpy(v, pressure, x), temperature)
+
+    def demixing_heat(
+        self, temperature: ArrayLike, pressure: ArrayLike, x: ArrayLike
+    ) -> FloatArray:
+        """Heat released when a homogeneous mixture separates at fixed T and P.
+
+        Enthalpy of the homogeneous state minus that of the equilibrium state
+        (J/native mol). Zero outside the gap, continuous at the binodal, and
+        NaN for an invalid common tangent. It does not say whether or when the
+        separation happens; that needs a kinetic or stability criterion.
+        """
+        c = self.coexistence(temperature, pressure)
+        equilibrium = self._lever_rule(self.enthalpy, temperature, pressure, x, c)
+        return self.enthalpy(temperature, pressure, x) - equilibrium
+
+    def exsolution_enthalpy(self, temperature: ArrayLike, pressure: ArrayLike) -> FloatArray:
+        """Heat released per native mole of upper phase exsolved at coexistence.
+
+        A small amount of the component-1-rich phase forms from the lower phase
+        and is carried away, as when buoyant hydrogen-rich liquid leaves a
+        magma. The result, (1-y)[h0(x)-h0(y)] + y[h1(x)-h1(y)] with lower and
+        upper compositions x and y, is in J per native mole of removed phase.
+        NaN where there is no gap or the tangent is invalid.
+        """
+        c = self.coexistence(temperature, pressure)
+        lower = self.partial_enthalpies(temperature, pressure, c.lower)
+        upper = self.partial_enthalpies(temperature, pressure, c.upper)
+        # 1 - y from its own logit, so an almost pure upper phase keeps precision.
+        y0, y1 = jax.nn.sigmoid(-c.logits[..., 1]), c.upper
+        heat = y0 * (lower[..., 0] - upper[..., 0]) + y1 * (lower[..., 1] - upper[..., 1])
+        return jnp.where(c.has_gap & c.valid, heat, jnp.nan)
+
+    def gradient_coefficient(
+        self, temperature: ArrayLike, pressure: ArrayLike, interface_width: ArrayLike
+    ) -> FloatArray:
+        """Square-gradient coefficient that gives a planar coexistence interface width.
+
+        The coefficient kappa (J m²/mol) multiplies the squared gradient of the
+        mixing-basis composition. The width (m) is the 10-90 % distance of the
+        planar profile between the coexisting phases at this T and P. A width is
+        a property of one state; kappa carries it to other temperatures. NaN
+        without a gap or for an invalid tangent.
+        """
+        a, b = self._parameters(temperature, pressure)
+        c = self.coexistence(temperature, pressure)
+        k = jnp.log(self.component_0_multiplicity)
+        _, width = _nucleation.planar_interface(a, b, c.logits[..., 0] - k, c.logits[..., 1] - k)
+        kappa = GAS_CONSTANT * as_j64(temperature) * (as_j64(interface_width) / width) ** 2
+        return jnp.where(c.has_gap & c.valid, kappa, jnp.nan)
+
+    def interfacial_tension(
+        self,
+        temperature: ArrayLike,
+        pressure: ArrayLike,
+        gradient_coefficient: ArrayLike,
+        molar_volume: ArrayLike,
+    ) -> FloatArray:
+        """Tension (J/m²) of the planar interface between the coexisting phases.
+
+        Args:
+            temperature: Temperature (K).
+            pressure: Pressure (bar).
+            gradient_coefficient: kappa (J m²/mol), see :meth:`gradient_coefficient`.
+            molar_volume: Volume of one mixing-basis mole (m³/mol), taken as
+                constant across the interface.
+        """
+        a, b = self._parameters(temperature, pressure)
+        c = self.coexistence(temperature, pressure)
+        k = jnp.log(self.component_0_multiplicity)
+        s, _ = _nucleation.planar_interface(a, b, c.logits[..., 0] - k, c.logits[..., 1] - k)
+        rt = GAS_CONSTANT * as_j64(temperature)
+        length = jnp.sqrt(as_j64(gradient_coefficient) / rt)
+        tension = rt / as_j64(molar_volume) * length * 2 * s
+        return jnp.where(c.has_gap & c.valid, tension, jnp.nan)
+
+    def nucleation_barrier(
+        self,
+        temperature: ArrayLike,
+        pressure: ArrayLike,
+        x: ArrayLike,
+        gradient_coefficient: ArrayLike,
+        molar_volume: ArrayLike,
+    ) -> NucleationBarrier:
+        """Energy of the critical nucleus that a homogeneous parent must form to separate.
+
+        Square-gradient theory (Cahn & Hilliard 1959) with a constant gradient
+        coefficient and molar volume. The barrier scales exactly as kappa^(3/2)
+        and as 1/volume. Near the binodal it approaches classical theory; at the
+        spinodal it vanishes as (distance)^(3/2). This is a thermodynamic
+        barrier: a rate also needs a kinetic prefactor and a volume and time,
+        usually through a criterion such as W/kT = ln(J0 V t).
+
+        Args:
+            temperature: Temperature (K).
+            pressure: Pressure (bar).
+            x: Native component-1 mole fraction of the homogeneous parent.
+            gradient_coefficient: kappa (J m²/mol) of the mixing-basis composition.
+            molar_volume: Volume of one mixing-basis mole (m³/mol).
+        """
+        t, p, x = jnp.broadcast_arrays(as_j64(temperature), as_j64(pressure), as_j64(x))
+        shape = t.shape
+        t, p, x = t.reshape(-1), p.reshape(-1), x.reshape(-1)
+        a, b = self._parameters(t, p)
+        a, b = jnp.broadcast_to(a, t.shape), jnp.broadcast_to(b, t.shape)
+        sl, sr, gap = _spinodal(a, b)
+        c = self.coexistence(t, p)
+        z0 = self.mixing_composition(x)
+        inside = c.contains(x)
+        unstable = inside & (z0 > sl) & (z0 < sr)
+        metastable = inside & ~unstable
+        # Solve a harmless dummy problem where no nucleus exists.
+        qs = (jnp.log(sl) - jnp.log1p(-sl), jnp.log(sr) - jnp.log1p(-sr))
+        dummy = jnp.where(z0 < 0.5, sl / 2, (1 + sr) / 2)
+        z_work = jnp.where(metastable, z0, jnp.where(gap, dummy, 0.5))
+        a_work, b_work = jnp.where(gap, a, 3.0), jnp.where(gap, b, 3.0)
+        # Spinodal logits of the a = b = 3 dummy, z = (1 -/+ sqrt(1/3)) / 2.
+        q_dummy = math.log((1 + math.sqrt(1 / 3)) / (1 - math.sqrt(1 / 3)))
+        qs = tuple(jnp.where(gap, q, v) for q, v in zip(qs, (-q_dummy, q_dummy)))
+        energy, centre, drive, solved = jax.vmap(_nucleation.critical_nucleus)(
+            a_work, b_work, z_work, qs
+        )
+        k = jnp.log(self.component_0_multiplicity)
+        s, _ = _nucleation.planar_interface(a, b, c.logits[..., 0] - k, c.logits[..., 1] - k)
+        classical = 4 * jnp.pi * (32 / 3) * s**3 / drive**2
+        rt = GAS_CONSTANT * t
+        scale = rt / as_j64(molar_volume) * (as_j64(gradient_coefficient) / rt) ** 1.5
+        valid = c.valid & (x >= 0) & (x <= 1) & (~metastable | solved)
+
+        def assemble(values, metastable_value):
+            values = jnp.where(metastable, metastable_value, values)
+            return jnp.where(valid, values, jnp.nan).reshape(shape)
+
+        stable_or_unstable = jnp.where(unstable, 0.0, jnp.inf)
+        energy = assemble(stable_or_unstable, scale * energy)
+        return NucleationBarrier(
+            energy=energy,
+            classical_energy=assemble(stable_or_unstable, scale * classical),
+            nucleus_composition=assemble(jnp.nan * t, self.native_composition(centre)),
+            energy_over_kT=energy * AVOGADRO / (GAS_CONSTANT * t.reshape(shape)),
+            valid=valid.reshape(shape),
+        )
 
     def diagnostics(
         self, temperature: ArrayLike, pressure: ArrayLike, x: ArrayLike
@@ -370,11 +765,17 @@ class SubregularSolution(eqx.Module):
         x = as_j64(x)
         a, b = self._parameters(temperature, pressure)
         sl, sr, gap = _spinodal(a, b)
+        sl, sr = self.native_composition(sl), self.native_composition(sr)
         coexistence = self.coexistence(temperature, pressure)
         curvature = self.curvature(temperature, pressure, x)
         separated = coexistence.contains(x)
+        enthalpy = self.enthalpy(temperature, pressure, x)
+        equilibrium_enthalpy = self._lever_rule(
+            self.enthalpy, temperature, pressure, x, coexistence
+        )
         return {
             "bulk_component_1_mole_fraction": x,
+            "mixing_basis_component_1_mole_fraction": self.mixing_composition(x),
             "homogeneous_curvature_J_per_mol": curvature,
             "spinodally_unstable": curvature < 0,
             "metastable": separated & (curvature >= 0),
@@ -386,4 +787,15 @@ class SubregularSolution(eqx.Module):
             "binodal_upper": jnp.where(gap, coexistence.upper, jnp.nan),
             "equilibrium_upper_phase_mole_fraction": coexistence.upper_fraction(x),
             "common_tangent_residual": coexistence.residual,
+            "homogeneous_mixing_enthalpy_J_per_mol": enthalpy,
+            "equilibrium_mixing_enthalpy_J_per_mol": equilibrium_enthalpy,
+            "homogeneous_mixing_entropy_J_per_mol_K": self.entropy(temperature, pressure, x),
+            "equilibrium_mixing_entropy_J_per_mol_K": self._lever_rule(
+                self.entropy, temperature, pressure, x, coexistence
+            ),
+            "homogeneous_mixing_volume_m3_per_mol": self.volume(temperature, pressure, x),
+            "equilibrium_mixing_volume_m3_per_mol": self._lever_rule(
+                self.volume, temperature, pressure, x, coexistence
+            ),
+            "demixing_heat_J_per_mol": enthalpy - equilibrium_enthalpy,
         }

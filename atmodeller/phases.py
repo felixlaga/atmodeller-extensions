@@ -923,6 +923,9 @@ class BinarySolutionPhaseOutput(PhaseOutput["BinarySolutionPhase"]):
         )[..., None]
         result["actual_mixing_gibbs_J_per_mol"] = actual_gibbs
         result["homogeneous_mixing_gibbs_J_per_mol"] = homogeneous_gibbs
+        # Enthalpy of the state the solver used: separated only if demixing is on.
+        state = "equilibrium" if self.phase.equilibrate else "homogeneous"
+        result["actual_mixing_enthalpy_J_per_mol"] = result[f"{state}_mixing_enthalpy_J_per_mol"]
         return result
 
     @property

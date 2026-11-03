@@ -15,8 +15,9 @@ Thermodynamic model
 -------------------
 
 :class:`~atmodeller.thermodata.mixing.SubregularSolution` uses an ordered pair
-of components, with :math:`x=n_1/(n_0+n_1)`. All energies are per mole of those
-components, temperature is K, and pressure is bar:
+of components, with :math:`x=n_1/(n_0+n_1)`. All public energies are per mole of
+those native components, temperature is K, and pressure is bar. With the
+default ``component_0_multiplicity=1``:
 
 .. math::
 
@@ -54,6 +55,55 @@ fraction. The two component inventories are recovered by the lever rule.
 
 Hydrogen-silicate parameterization
 ----------------------------------
+
+``SubregularSolution.hydrogen_silicate_gilmore26()`` implements the final
+`Gilmore & Stixrude (2026) model
+<https://doi.org/10.1038/s41586-025-09970-4>`_, equations 1 and 8. It uses
+A=75000 and B=424000 J/mol of fit-basis units, C=4400 K and D=-350000 bar.
+The paper defines :math:`z=n_{\rm H2}/(n_{\rm H2}+n_{\rm MgO}+n_{\rm SiO2})`.
+One native MgSiO3 formula unit contributes two fit-basis units, so this
+constructor sets ``component_0_multiplicity=2``. Consequently,
+
+.. math::
+
+   z=\frac{x}{2-x},\quad x=\frac{2z}{1+z},\quad
+   G_{\rm mix}=(2n_0+n_1)g_{\rm fit}(z),\quad
+   g_{\rm native}(x)=(2-x)g_{\rm fit}(z).
+
+Both activities follow derivatives of this extensive energy:
+:math:`\mu_{0,\rm native}=2\mu_{0,\rm fit}` and
+:math:`\mu_{1,\rm native}=\mu_{1,\rm fit}`. Transforming compositions alone
+does not preserve chemical potentials. ``mixing_composition`` and
+``native_composition`` expose this conversion; all public phase fractions,
+inventories and spinodal/binodal endpoints remain on the native basis.
+
+For a closed parcel containing 3 wt% H2, use the native molar masses to
+convert the mass fraction before calling the mixing model::
+
+    from molmass import Formula
+    from atmodeller import SubregularSolution
+
+    w = 0.03
+    nh = w / Formula("H2").mass
+    ns = (1 - w) / Formula("MgSiO3").mass
+    x = nh / (nh + ns)
+    mixing = SubregularSolution.hydrogen_silicate_gilmore26()
+    diagnostics = mixing.diagnostics(3000.0, 20000.0, x)
+    spinodal_temperature = mixing.spinodal_temperature(20000.0, x)
+
+This model predicts a metastable homogeneous parcel at these conditions,
+with a spinodal temperature of about 2942 K. ``spinodal_temperature(P, x)``
+analytically inverts the curvature; NaN denotes no finite positive root or
+invalid input. It supplies no nucleation or growth rate. The helper
+``equilibrium_gibbs_energy(T, P, x)`` returns the common-tangent convex envelope.
+
+The focused study in ``research/spinodal_onset/`` audits this fit against the
+authors' tabulated simulations. It does not reproduce every coexistence pair
+within the quoted composition uncertainties. Treat its delayed-exsolution
+results as model-dependent bounds, not validated planetary predictions.
+
+Historical parameterization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``SubregularSolution.hydrogen_silicate_rogers25()`` implements equation 7 of
 `Rogers, Young & Schlichting (2025)
@@ -229,12 +279,76 @@ The ``mixing`` output also includes ``actual_mixing_gibbs_J_per_mol`` and
 ``homogeneous_mixing_gibbs_J_per_mol``. Their difference quantifies the mixing
 free-energy reduction, not heat release or a decomposition timescale.
 
-Worked study
-------------
+Heat of mixing and of separation
+--------------------------------
+
+The same free energy gives the energies of mixing by automatic differentiation:
+``enthalpy``, ``entropy``, ``volume`` and ``heat_capacity`` of the homogeneous
+mixture, and ``partial_enthalpies`` of its two components. ``equilibrium_enthalpy``,
+``equilibrium_entropy`` and ``equilibrium_volume`` average the coexisting phases
+by the lever rule; the envelope theorem makes them equal the derivatives of
+``equilibrium_gibbs_energy``. ``equilibrium_heat_capacity`` is the apparent heat
+capacity of a closed mixture kept in equilibrium, which includes the heat
+released as the phase compositions move.
+
+``demixing_heat`` is the heat a homogeneous mixture releases when it separates at
+fixed temperature and pressure (J per native mole). It is zero outside the gap
+and continuous at the binodal. ``exsolution_enthalpy`` is the heat released per
+mole of upper phase that forms at coexistence and is carried away. For the
+hydrogen-silicate fits, the hydrogen partial enthalpy is 40-90 MJ per kg of
+hydrogen, so separation is strongly exothermic. ``binodal_temperature`` gives the
+equilibrium separation onset of a composition.
+
+The ``mixing`` output reports the homogeneous and equilibrium enthalpy, entropy
+and volume, ``demixing_heat_J_per_mol``, and ``actual_mixing_enthalpy_J_per_mol``
+for the state the solver used.
+
+Nucleation barriers
+-------------------
+
+``nucleation_barrier`` returns the square-gradient (Cahn-Hilliard) critical
+nucleus of a metastable homogeneous parent and the classical estimate with the
+same planar tension. It needs a gradient coefficient kappa (J m²/mol, for the
+mixing-basis composition) and a constant molar volume per mixing-basis mole.
+``gradient_coefficient`` converts a measured 10-90 % interface width at one state
+into kappa. The barrier scales exactly as kappa^(3/2) and as 1/volume, tends to
+classical theory near the binodal and vanishes as the 3/2 power at the spinodal.
+These are thermodynamic barriers; a rate needs a prefactor, volume and time.
+
+Cooling paths
+-------------
+
+``atmodeller.cooling.ParcelCooling`` cools a closed parcel at fixed pressure,
+with heat lost per kilogram as the path coordinate. The parcel stays homogeneous
+to an onset temperature: the binodal (equilibrium path), the spinodal, or
+``nucleation_onset_temperature`` for a barrier criterion W/kT = ln(J0 V t). It
+then separates isenthalpically, so it reheats (recalescence), or isothermally.
+The final state and heat lost do not depend on the onset. Sensible heat comes
+from the pure-component standard-state enthalpies, without a pressure term.
+
+``InteriorCooling`` describes a convecting interior that exsolves at its top into
+an envelope. The interior composition follows the lower binodal branch at the
+top pressure, and the exsolved component leaves as a pure phase. The path reports
+exsolution and sensible heat, and their ratio per kelvin of cooling.
+``solve_path_with_engine`` replays a parcel path with two prebuilt equilibrium
+models, homogeneous and demixing, so the solver never recompiles. For a closed
+parcel the solver reproduces the fast functions; gas exchange can join later.
+
+None of these add gravitational settling energy, transport, or envelope physics.
+
+Worked studies
+--------------
+
+``research/spinodal_onset/README.md`` examines binodal-to-spinodal delay during
+isobaric cooling using the final 2026 parameterization, an explicit basis
+conversion, published-data audits and parameter stress tests. The native
+solver is checked in 27 closed-binary cases. An imposed no-nucleation limit
+is compared with instantaneous equilibrium; neither calculates kinetics.
 
 ``research/spinodal_study/README.md`` compares homogeneous and demixed H2-MgSiO3
 inventories through the public API, then runs conditional hot atmospheric parcel
 chemistry with selective transfer, entrainment, condensation and complete-remixing
 controls. Scripts, all numerical outputs, figures and validation are included.
-The study is a one-way inventory-transfer experiment, not a calibrated reacting
+This earlier study uses the historical 2025 fit and is retained unchanged.
+It is a one-way inventory-transfer experiment, not a calibrated reacting
 high-pressure fluid or self-consistent planetary atmosphere calculation.
